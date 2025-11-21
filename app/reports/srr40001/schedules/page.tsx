@@ -1,0 +1,724 @@
+'use client';
+
+import EmailSelector from '@/components/EmailSelector';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+const BASE_QUERY = `select 
+    doc_date as docdate,
+    doc_no as docno,
+    (select name_1 from ar_customer where ar_customer.code = ic_trans_detail.cust_code) as "ชื่อลูกค้า",
+    item_code as "รหัสสินค้า",
+    item_name as "ชื่อสินค้า",
+    wh_code as "คลัง",
+    qty as "จำนวน",
+    unit_code as "หน่วย",
+    price as "ราคาขาย",
+    (sum_of_cost/qty) as "ราคาทุน",
+    sum_of_cost as "รวมต้นทุน",
+    sum_amount as "รวมราคาขาย",
+    (sum_amount-sum_of_cost) as "ผลต่าง" 
+    from ic_trans_detail 
+    where trans_flag = 44 and sum_amount<sum_of_cost
+    AND doc_date BETWEEN '{{start_date}}' AND '{{end_date}}'
+    order by doc_date, doc_no`;
+
+const DEFAULT_QUERY_CONFIG = {
+    shopid: "rungroj",
+    query_items: [
+        {
+            alias: "inventory_list",
+            query: BASE_QUERY,
+            summary_config: {
+                levels: [
+                    {
+                        group_by_fields: ["docdate"],
+                        sum_fields: ["จำนวน", "รวมต้นทุน", "รวมราคาขาย", "ผลต่าง"],
+                        typejson: 1
+                    }
+                ],
+                grand_total: true,
+                grand_total_type: 99
+            }
+        }
+    ]
+};
+
+const DEFAULT_PDF_CONFIG = {
+    shopid: "rungroj",
+    pdf_config: {
+        title: "รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า (SRR40001)",
+        description: "ตั้งแต่วันที่ {{thai_start_date}} ถึงวันที่ {{thai_end_date}}",
+        title_align: "C",
+        description_align: "L",
+        orientation: "L",
+        page_size: "A4"
+    },
+    layout_config: {
+        schema_version: 1,
+        styles: {
+            use_fill: false,
+            header: {
+                background: "#FFFFFF",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            detail: {
+                background: "#FFFFFF",
+                text: "#000000",
+                border: "#E0E0E0"
+            },
+            summary: {
+                background: "#F5F5F5",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            level_1: {
+                background: "#F5F5F5",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            table: {
+                row_spacing: 0,
+                column_spacing: 2,
+                grid_color: "#CCCCCC"
+            }
+        },
+        sections: [
+            {
+                alias: "inventory_list",
+                row_type: "detail",
+                columns: [
+                    { field: "docdate" },
+                    { field: "docno" },
+                    { field: "ชื่อลูกค้า" },
+                    { field: "รหัสสินค้า" },
+                    { field: "ชื่อสินค้า" },
+                    { field: "คลัง" },
+                    { field: "จำนวน" },
+                    { field: "หน่วย" },
+                    { field: "ราคาขาย" },
+                    { field: "ราคาทุน" },
+                    { field: "รวมต้นทุน" },
+                    { field: "รวมราคาขาย" },
+                    { field: "ผลต่าง" }
+                ]
+            }
+        ],
+        column_schema: {
+            "docdate": { label: "วันที่", flex: 10, align: "L", data_type: "date", format: "dd/MM/yyyy", use_buddhist_year: true },
+            "docno": { label: "เอกสารเลขที่", flex: 12, align: "L" },
+            "ชื่อลูกค้า": { label: "ชื่อลูกค้า", flex: 15, align: "L", hide_when_summary: true },
+            "รหัสสินค้า": { label: "รหัสสินค้า", flex: 10, align: "L", hide_when_summary: true },
+            "ชื่อสินค้า": { label: "ชื่อสินค้า", flex: 15, align: "L", hide_when_summary: true },
+            "คลัง": { label: "คลัง", flex: 5, align: "C", hide_when_summary: true },
+            "จำนวน": { label: "จำนวน", flex: 8, align: "R", data_type: "number", format: "#,##0.00" },
+            "หน่วย": { label: "หน่วย", flex: 5, align: "C", hide_when_summary: true },
+            "ราคาขาย": { label: "ราคาขาย", flex: 8, align: "R", data_type: "number", format: "#,##0.00", hide_when_summary: true },
+            "ราคาทุน": { label: "ราคาทุน", flex: 8, align: "R", data_type: "number", format: "#,##0.00", hide_when_summary: true },
+            "รวมต้นทุน": { label: "รวมต้นทุน", flex: 10, align: "R", data_type: "number", format: "#,##0.00" },
+            "รวมราคาขาย": { label: "รวมราคาขาย", flex: 10, align: "R", data_type: "number", format: "#,##0.00" },
+            "ผลต่าง": { label: "ผลต่าง", flex: 8, align: "R", data_type: "number", format: "#,##0.00" }
+        }
+    }
+};
+
+interface EmailSchedule {
+    schedule_id: string;
+    schedule_name: string;
+    enabled: boolean;
+    date_preset: string;
+    days_of_week: number[];
+    times: string[];
+    timezone: string;
+    recipients: string[];
+    cc_recipients: string[];
+    email_subject: string;
+    include_pdf: boolean;
+    query_config?: any;
+    pdf_config?: any;
+    created_at?: string;
+    updated_at?: string;
+}
+
+const DATE_PRESETS = [
+    { value: 'today', label: 'วันนี้' },
+    { value: 'yesterday', label: 'เมื่อวานนี้' },
+    { value: 'this_week', label: 'สัปดาห์นี้' },
+    { value: 'last_week', label: 'สัปดาห์ก่อน' },
+    { value: 'this_month', label: 'เดือนนี้' },
+    { value: 'last_month', label: 'เดือนก่อน' },
+    { value: 'this_year', label: 'ปีนี้' },
+    { value: 'last_year', label: 'ปีก่อน' },
+];
+
+const DAYS_OF_WEEK = [
+    { value: 0, label: 'อาทิตย์' },
+    { value: 1, label: 'จันทร์' },
+    { value: 2, label: 'อังคาร' },
+    { value: 3, label: 'พุธ' },
+    { value: 4, label: 'พฤหัสบดี' },
+    { value: 5, label: 'ศุกร์' },
+    { value: 6, label: 'เสาร์' },
+];
+
+export default function ScheduleManagement() {
+    const [schedules, setSchedules] = useState<EmailSchedule[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [showJson, setShowJson] = useState(false);
+    const [runningId, setRunningId] = useState<string | null>(null);
+
+    const shopid = 'rungroj';
+    const reportid = 'SRR40001';
+
+    const [formData, setFormData] = useState<Partial<EmailSchedule>>({
+        schedule_name: '',
+        enabled: true,
+        date_preset: 'today',
+        days_of_week: [1, 2, 3, 4, 5], // Weekdays by default
+        times: ['09:00'],
+        timezone: 'Asia/Bangkok',
+        recipients: [],
+        cc_recipients: [],
+        email_subject: 'รายงานวิเคราะห์ขายขาดทุนประจำวัน',
+        include_pdf: true,
+        query_config: DEFAULT_QUERY_CONFIG,
+        pdf_config: DEFAULT_PDF_CONFIG,
+    });
+
+    useEffect(() => {
+        fetchSchedules();
+    }, []);
+
+    const fetchSchedules = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/mongodb/get', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    collection: 'email_schedules',
+                    filter: { shopid, reportid },
+                    sort: { created_at: -1 },
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch schedules');
+            }
+
+            setSchedules(data.data || []);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        try {
+            const now = new Date().toISOString();
+            const schedule_id = editingId || ('schedule-' + Date.now());
+
+            const payload = {
+                collection: 'email_schedules',
+                filter: { shopid, reportid, schedule_id },
+                data: {
+                    shopid,
+                    reportid,
+                    schedule_id,
+                    report_name: 'รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า',
+                    ...formData,
+                    created_at: editingId ? undefined : now,
+                    updated_at: now,
+                },
+                upsert: true,
+            };
+
+            const response = await fetch('/api/mongodb/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to save schedule');
+            }
+
+            resetForm();
+            fetchSchedules();
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const handleRunSchedule = async (schedule: EmailSchedule) => {
+        if (!confirm(`คุณต้องการทดสอบส่งอีเมล "${schedule.schedule_name}" ทันทีหรือไม่?`)) {
+            return;
+        }
+
+        setRunningId(schedule.schedule_id);
+        try {
+            const response = await fetch('/api/process-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shopid,
+                    schedule_id: schedule.schedule_id
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to run schedule');
+            }
+
+            alert(`สำเร็จ: ${data.message}\nGUID: ${data.guid}`);
+        } catch (err: any) {
+            alert(`เกิดข้อผิดพลาด: ${err.message}`);
+        } finally {
+            setRunningId(null);
+        }
+    };
+
+    const handleEdit = (schedule: EmailSchedule) => {
+        setFormData({
+            schedule_name: schedule.schedule_name,
+            enabled: schedule.enabled,
+            date_preset: schedule.date_preset,
+            days_of_week: schedule.days_of_week,
+            times: schedule.times,
+            timezone: schedule.timezone,
+            recipients: schedule.recipients,
+            cc_recipients: schedule.cc_recipients,
+            email_subject: schedule.email_subject,
+            include_pdf: schedule.include_pdf,
+            query_config: schedule.query_config || DEFAULT_QUERY_CONFIG,
+            pdf_config: schedule.pdf_config || DEFAULT_PDF_CONFIG,
+        });
+        setEditingId(schedule.schedule_id);
+        setShowForm(true);
+    };
+
+    const handleDelete = async (schedule_id: string) => {
+        if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบตารางส่งนี้?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/mongodb/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    collection: 'email_schedules',
+                    filter: { shopid, reportid, schedule_id },
+                    delete_many: false,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete schedule');
+            }
+
+            fetchSchedules();
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const toggleEnabled = async (schedule: EmailSchedule) => {
+        try {
+            const response = await fetch('/api/mongodb/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    collection: 'email_schedules',
+                    filter: { shopid, reportid, schedule_id: schedule.schedule_id },
+                    data: {
+                        enabled: !schedule.enabled,
+                        updated_at: new Date().toISOString(),
+                    },
+                    upsert: false,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to toggle schedule');
+            }
+
+            fetchSchedules();
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const generateGuid = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+    const resetForm = () => {
+        setFormData({
+            schedule_name: generateGuid(),
+            enabled: true,
+            date_preset: 'today',
+            days_of_week: [1, 2, 3, 4, 5],
+            times: ['09:00'],
+            timezone: 'Asia/Bangkok',
+            recipients: [],
+            cc_recipients: [],
+            email_subject: 'รายงานวิเคราะห์ขายขาดทุนประจำวัน',
+            include_pdf: true,
+            query_config: DEFAULT_QUERY_CONFIG,
+            pdf_config: DEFAULT_PDF_CONFIG,
+        });
+        setShowForm(false);
+        setEditingId(null);
+    };
+
+    const toggleDayOfWeek = (day: number) => {
+        const days = formData.days_of_week || [];
+        if (days.includes(day)) {
+            setFormData({ ...formData, days_of_week: days.filter(d => d !== day) });
+        } else {
+            setFormData({ ...formData, days_of_week: [...days, day].sort() });
+        }
+    };
+
+    const addTime = () => {
+        const times = formData.times || [];
+        setFormData({ ...formData, times: [...times, '09:00'] });
+    };
+
+    const updateTime = (index: number, value: string) => {
+        const times = [...(formData.times || [])];
+        times[index] = value;
+        setFormData({ ...formData, times });
+    };
+
+    const removeTime = (index: number) => {
+        const times = formData.times || [];
+        setFormData({ ...formData, times: times.filter((_, i) => i !== index) });
+    };
+
+    return (
+        <main className="min-h-screen bg-slate-50">
+            {/* Header */}
+            <div className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link href="/reports/srr40001" className="text-slate-400 hover:text-emerald-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                        </Link>
+                        <h1 className="text-lg font-semibold text-slate-800">ตารางการส่งอีเมล - SRR40001</h1>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <button
+                            onClick={() => setShowJson(!showJson)}
+                            className={"px-4 py-2 rounded-lg transition font-medium text-sm shadow-sm " + (showJson ? "bg-slate-200 text-slate-800" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50")}
+                        >
+                            {showJson ? 'ซ่อน JSON' : 'แสดง JSON'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                setShowForm(!showForm);
+                            }}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm shadow-sm"
+                        >
+                            {showForm ? 'ยกเลิก' : '+ เพิ่มตารางส่ง'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* JSON View */}
+            {showJson && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="bg-slate-900 rounded-xl shadow-lg p-6 overflow-hidden">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-slate-100 font-mono text-sm">Current Schedules Data (JSON)</h3>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(schedules, null, 2));
+                                    alert('Copied to clipboard!');
+                                }}
+                                className="text-xs bg-slate-700 text-slate-300 px-3 py-1.5 rounded hover:bg-slate-600 transition"
+                            >
+                                Copy JSON
+                            </button>
+                        </div>
+                        <pre className="text-xs font-mono text-emerald-400 overflow-auto max-h-96 bg-slate-950 p-4 rounded-lg">
+                            {JSON.stringify(schedules, null, 2)}
+                        </pre>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                        {error}
+                    </div>
+                )}
+
+                {/* Form */}
+                {showForm && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-6">
+                            {editingId ? 'แก้ไขตารางส่ง' : 'สร้างตารางส่งใหม่'}
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        ชื่อตารางส่ง <span className="text-red-500">*</span> (สร้างอัตโนมัติ)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        readOnly
+                                        value={formData.schedule_name}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none bg-slate-100 text-slate-500 cursor-not-allowed"
+                                        placeholder="Auto-generated GUID"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        หัวข้ออีเมล <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.email_subject}
+                                        onChange={(e) => setFormData({ ...formData, email_subject: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-black"
+                                        placeholder="รายงานวิเคราะห์ขายขาดทุน"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Date Preset */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    ช่วงเวลาข้อมูล <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {DATE_PRESETS.map(preset => (
+                                        <button
+                                            key={preset.value}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, date_preset: preset.value })}
+                                            className={"px-4 py-2 rounded-lg border text-sm font-medium transition-colors " + (formData.date_preset === preset.value ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300 hover:border-emerald-400")}
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Days of Week */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    วันที่ส่ง <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {DAYS_OF_WEEK.map(day => (
+                                        <button
+                                            key={day.value}
+                                            type="button"
+                                            onClick={() => toggleDayOfWeek(day.value)}
+                                            className={"px-4 py-2 rounded-lg border text-sm font-medium transition-colors " + ((formData.days_of_week || []).includes(day.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400")}
+                                        >
+                                            {day.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Times */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    เวลาที่ส่ง <span className="text-red-500">*</span>
+                                </label>
+                                <div className="space-y-2">
+                                    {(formData.times || []).map((time, index) => (
+                                        <div key={index} className="flex gap-2">
+                                            <input
+                                                type="time"
+                                                value={time}
+                                                onChange={(e) => updateTime(index, e.target.value)}
+                                                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-black"
+                                            />
+                                            {(formData.times || []).length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeTime(index)}
+                                                    className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
+                                                >
+                                                    ลบ
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={addTime}
+                                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-sm font-medium"
+                                    >
+                                        + เพิ่มเวลา
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Recipients */}
+                            <EmailSelector
+                                label="ผู้รับ (ถึง)"
+                                selectedEmails={formData.recipients || []}
+                                onChange={(emails) => setFormData({ ...formData, recipients: emails })}
+                                placeholder="เลือกผู้รับ..."
+                            />
+
+                            {/* CC Recipients */}
+                            <EmailSelector
+                                label="ผู้รับสำเนา (CC)"
+                                selectedEmails={formData.cc_recipients || []}
+                                onChange={(emails) => setFormData({ ...formData, cc_recipients: emails })}
+                                placeholder="เลือกผู้รับสำเนา..."
+                            />
+
+                            {/* Options */}
+                            <div className="flex items-center gap-4 pt-4 border-t border-slate-200">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.enabled}
+                                        onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                                        className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                    />
+                                    <span className="text-sm text-slate-700">เปิดใช้งาน</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.include_pdf}
+                                        onChange={(e) => setFormData({ ...formData, include_pdf: e.target.checked })}
+                                        className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                    />
+                                    <span className="text-sm text-slate-700">แนบไฟล์ PDF</span>
+                                </label>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium"
+                                >
+                                    {editingId ? 'อัปเดตตารางส่ง' : 'สร้างตารางส่ง'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition font-medium"
+                                >
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                {/* Schedules List */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-200">
+                        <h2 className="text-lg font-semibold text-slate-900">รายการตารางส่งรายงาน</h2>
+                    </div>
+
+                    {loading ? (
+                        <div className="p-8 text-center text-slate-500">กำลังโหลดตารางส่ง...</div>
+                    ) : schedules.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500">
+                            ยังไม่มีตารางส่ง สร้างตารางส่งรายงานอัตโนมัติแรกของคุณ!
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-200">
+                            {schedules.map((schedule) => (
+                                <div key={schedule.schedule_id} className="p-6 hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h3 className="text-lg font-semibold text-slate-900">{schedule.schedule_name}</h3>
+                                                <button
+                                                    onClick={() => toggleEnabled(schedule)}
+                                                    className={"px-2.5 py-1 rounded-full text-xs font-medium " + (schedule.enabled ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600")}
+                                                >
+                                                    {schedule.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                                                </button>
+                                            </div>
+                                            <div className="space-y-1 text-sm text-slate-600">
+                                                <p>📅 <strong>ช่วงเวลา:</strong> {DATE_PRESETS.find(p => p.value === schedule.date_preset)?.label}</p>
+                                                <p>📆 <strong>วัน:</strong> {schedule.days_of_week.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label).join(', ')}</p>
+                                                <p>🕐 <strong>เวลา:</strong> {schedule.times.join(', ')}</p>
+                                                <p>📧 <strong>ถึง:</strong> {schedule.recipients.join(', ')}</p>
+                                                {schedule.cc_recipients.length > 0 && (
+                                                    <p>📧 <strong>สำเนา:</strong> {schedule.cc_recipients.join(', ')}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 ml-4">
+                                            <button
+                                                onClick={() => handleRunSchedule(schedule)}
+                                                disabled={runningId === schedule.schedule_id}
+                                                className={"px-3 py-1.5 text-sm font-medium rounded-lg transition " + (runningId === schedule.schedule_id ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "text-purple-600 hover:bg-purple-50")}
+                                            >
+                                                {runningId === schedule.schedule_id ? 'Sending...' : 'ทดสอบส่ง Email'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(schedule)}
+                                                className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                            >
+                                                แก้ไข
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(schedule.schedule_id)}
+                                                className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                                            >
+                                                ลบ
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </main>
+    );
+}
