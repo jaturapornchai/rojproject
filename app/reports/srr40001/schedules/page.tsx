@@ -569,12 +569,36 @@ export default function ScheduleManagement() {
                                 <div className="space-y-2">
                                     {(formData.times || []).map((time, index) => (
                                         <div key={index} className="flex gap-2">
-                                            <input
-                                                type="time"
-                                                value={time}
-                                                onChange={(e) => updateTime(index, e.target.value)}
-                                                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-black"
-                                            />
+                                            {/* Time Options Generator - Split Hour/Minute */}
+                                            {(() => {
+                                                const [h, m] = time.split(':');
+                                                const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+                                                const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+
+                                                return (
+                                                    <div className="flex items-center gap-1">
+                                                        <select
+                                                            value={h}
+                                                            onChange={(e) => updateTime(index, `${e.target.value}:${m}`)}
+                                                            className="px-2 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-black bg-white"
+                                                        >
+                                                            {hours.map(hour => (
+                                                                <option key={hour} value={hour}>{hour}</option>
+                                                            ))}
+                                                        </select>
+                                                        <span className="text-slate-500 font-bold">:</span>
+                                                        <select
+                                                            value={m}
+                                                            onChange={(e) => updateTime(index, `${h}:${e.target.value}`)}
+                                                            className="px-2 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-black bg-white"
+                                                        >
+                                                            {minutes.map(minute => (
+                                                                <option key={minute} value={minute}>{minute}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            })()}
                                             {(formData.times || []).length > 1 && (
                                                 <button
                                                     type="button"
@@ -651,8 +675,9 @@ export default function ScheduleManagement() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                )}
+                    </div >
+                )
+                }
 
                 {/* Schedules List */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -718,7 +743,7 @@ export default function ScheduleManagement() {
                         </div>
                     )}
                 </div>
-            </div>
-        </main>
+            </div >
+        </main >
     );
 }

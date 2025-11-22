@@ -22,13 +22,12 @@ export default function ReportSRR40001() {
         return `${day} ${month} ${year}`;
     };
 
-    const getToday = () => {
-        return new Date();
-    };
+    const getThisYearStart = () => new Date(new Date().getFullYear(), 0, 1);
+    const getThisYearEnd = () => new Date(new Date().getFullYear(), 11, 31);
 
     // State now holds Date objects for the picker
-    const [startDate, setStartDate] = useState<Date | null>(getToday());
-    const [endDate, setEndDate] = useState<Date | null>(getToday());
+    const [startDate, setStartDate] = useState<Date | null>(getThisYearStart());
+    const [endDate, setEndDate] = useState<Date | null>(getThisYearEnd());
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     // --- Presets ---
