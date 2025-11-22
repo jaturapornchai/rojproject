@@ -77,10 +77,17 @@ export default function UserManual() {
                                 <div className="text-sm text-slate-500">ส่งรายงานอัตโนมัติ</div>
                             </div>
                         </a>
+                        <a href="#admin" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <span className="text-2xl">⚙️</span>
+                            <div>
+                                <div className="font-semibold text-slate-900">6. จัดการสิทธิ์</div>
+                                <div className="text-sm text-slate-500">เฉพาะผู้ดูแลระบบ</div>
+                            </div>
+                        </a>
                         <a href="#tips" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
                             <span className="text-2xl">💡</span>
                             <div>
-                                <div className="font-semibold text-slate-900">6. เคล็ดลับ</div>
+                                <div className="font-semibold text-slate-900">7. เคล็ดลับ</div>
                                 <div className="text-sm text-slate-500">ข้อแนะนำการใช้งาน</div>
                             </div>
                         </a>
@@ -396,13 +403,120 @@ export default function UserManual() {
                     </div>
                 </section>
 
-                {/* Section 6: Tips */}
+                {/* Section 6: Admin Access Management */}
+                <section id="admin" className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl">
+                            ⚙️
+                        </div>
+                        <h3 className="text-2xl font-bold text-slate-900">6. จัดการสิทธิ์ผู้ใช้งาน</h3>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        <p className="text-slate-700">
+                            หน้านี้ใช้สำหรับกำหนดสิทธิ์การเข้าถึงระบบ <strong>เฉพาะผู้ดูแลระบบเท่านั้น</strong>
+                        </p>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-slate-900">👤 ประเภทผู้ใช้งาน</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h5 className="font-semibold text-blue-900 mb-2">🛡️ ผู้ดูแลระบบ (Admin)</h5>
+                                    <ul className="text-blue-800 text-sm space-y-1">
+                                        <li>• เข้าถึงระบบทั้งหมดได้</li>
+                                        <li>• จัดการสิทธิ์ผู้ใช้อื่นได้</li>
+                                        <li>• ดูรายงานและตั้งค่าอีเมลได้</li>
+                                        <li>• จัดการรายชื่อผู้ติดต่อได้</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <h5 className="font-semibold text-gray-900 mb-2">👥 ผู้ใช้งานทั่วไป (User)</h5>
+                                    <ul className="text-gray-800 text-sm space-y-1">
+                                        <li>• ดูรายงานตามสิทธิ์ที่กำหนด</li>
+                                        <li>• ไม่สามารถจัดการผู้ใช้อื่นได้</li>
+                                        <li>• สิทธิ์ถูกจำกัดตามที่ Admin กำหนด</li>
+                                        <li>• สามารถใช้ฟีเจอร์ที่เปิดให้ได้</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-slate-900">➕ การเพิ่มสิทธิ์ผู้ใช้ใหม่</h4>
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <ol className="list-decimal list-inside space-y-2 text-purple-800">
+                                    <li>คลิกปุ่ม <strong>"เพิ่มสิทธิ์ใหม่"</strong> สีเขียว</li>
+                                    <li>กรอกข้อมูลที่จำเป็น:
+                                        <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                                            <li>อีเมล: ที่อยู่อีเมลของผู้ใช้ (ต้องมีอยู่จริง)</li>
+                                            <li>บทบาท: เลือก "ผู้ใช้งานทั่วไป" หรือ "ผู้ดูแลระบบ"</li>
+                                            <li>สิทธิ์การเข้าถึงรายงาน: เลือกรายงานที่ผู้ใช้สามารถดูได้</li>
+                                        </ul>
+                                    </li>
+                                    <li>เลือก <strong>"เปิดใช้งานทันที"</strong> หากต้องการให้ใช้งานได้ทันที</li>
+                                    <li>คลิก <strong>"สร้างสิทธิ์"</strong></li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-slate-900">✏️ การแก้ไขสิทธิ์</h4>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <ol className="list-decimal list-inside space-y-2 text-blue-800">
+                                    <li>คลิกไอคอนดินสอ (แก้ไข) ในคอลัมน์ "จัดการ"</li>
+                                    <li>แก้ไขข้อมูลที่ต้องการ (ไม่สามารถเปลี่ยนอีเมลได้)</li>
+                                    <li>คลิก <strong>"บันทึกการแก้ไข"</strong></li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-slate-900">🔄 การเปิด/ปิดการใช้งาน</h4>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <p className="text-yellow-800 text-sm mb-2">
+                                    ใช้ปุ่มเปิด/ปิดในคอลัมน์ "จัดการ" เพื่อระงับหรือเปิดใช้งานผู้ใช้โดยไม่ต้องลบออก
+                                </p>
+                                <ul className="text-yellow-800 text-sm list-disc list-inside space-y-1">
+                                    <li><strong>เปิดใช้งาน:</strong> ผู้ใช้สามารถล็อกอินได้ปกติ</li>
+                                    <li><strong>ปิดใช้งาน:</strong> ผู้ใช้จะไม่สามารถเข้าสู่ระบบได้</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-slate-900">📊 สถิติสิทธิ์</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
+                                    <div className="text-2xl font-bold text-slate-900">สิทธิ์ทั้งหมด</div>
+                                    <div className="text-sm text-slate-600">จำนวนผู้ใช้ที่ลงทะเบียนทั้งหมด</div>
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">เปิดใช้งาน</div>
+                                    <div className="text-sm text-emerald-600">ผู้ใช้ที่สามารถใช้งานได้</div>
+                                </div>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                                    <div className="text-2xl font-bold text-blue-600">ผู้ดูแลระบบ</div>
+                                    <div className="text-sm text-blue-600">จำนวนผู้ดูแลทั้งหมด</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-red-800 text-sm">
+                                <strong>⚠️ ข้อควรระวัง:</strong> การลบสิทธิ์จะทำให้ผู้ใช้ไม่สามารถเข้าสู่ระบบได้ทันที
+                                กรุณาตรวจสอบให้แน่ใจก่อนลบ
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Section 7: Tips */}
                 <section id="tips" className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 text-xl">
                             💡
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-900">6. เคล็ดลับและข้อแนะนำ</h3>
+                        <h3 className="text-2xl font-bold text-slate-900">7. เคล็ดลับและข้อแนะนำ</h3>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
