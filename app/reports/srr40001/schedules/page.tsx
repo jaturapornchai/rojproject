@@ -1,6 +1,7 @@
 'use client';
 
 import EmailSelector from '@/components/EmailSelector';
+import { SHOP_ID_PUBLIC } from '@/lib/constants';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -24,7 +25,7 @@ const BASE_QUERY = `select
     order by doc_date, doc_no`;
 
 const DEFAULT_QUERY_CONFIG = {
-    shopid: "rungroj",
+    shopid: SHOP_ID_PUBLIC,
     query_items: [
         {
             alias: "inventory_list",
@@ -45,7 +46,7 @@ const DEFAULT_QUERY_CONFIG = {
 };
 
 const DEFAULT_PDF_CONFIG = {
-    shopid: "rungroj",
+    shopid: SHOP_ID_PUBLIC,
     pdf_config: {
         title: "รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า (SRR40001)",
         description: "ตั้งแต่วันที่ {{thai_start_date}} ถึงวันที่ {{thai_end_date}}",
@@ -172,16 +173,18 @@ export default function ScheduleManagement() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showJson, setShowJson] = useState(false);
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, schedule: EmailSchedule | null }>({ isOpen: false, schedule: null });
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [runningId, setRunningId] = useState<string | null>(null);
 
-    const shopid = 'rungroj';
+    const shopid = SHOP_ID_PUBLIC;
     const reportid = 'SRR40001';
 
     const [formData, setFormData] = useState<Partial<EmailSchedule>>({
         schedule_name: '',
         enabled: true,
         date_preset: 'today',
-        days_of_week: [1, 2, 3, 4, 5], // Weekdays by default
+        days_of_week: [1, 2, 3, 4, 5],
         times: ['09:00'],
         timezone: 'Asia/Bangkok',
         recipients: [],
@@ -266,12 +269,19 @@ export default function ScheduleManagement() {
         }
     };
 
-    const handleRunSchedule = async (schedule: EmailSchedule) => {
-        if (!confirm(`คุณต้องการทดสอบส่งอีเมล "${schedule.schedule_name}" ทันทีหรือไม่?`)) {
-            return;
-        }
+    const handleRunSchedule = (schedule: EmailSchedule) => {
+        setConfirmModal({ isOpen: true, schedule });
+    };
 
+    const executeRunSchedule = async () => {
+        const schedule = confirmModal.schedule;
+        if (!schedule) return;
+
+        setConfirmModal({ isOpen: false, schedule: null });
         setRunningId(schedule.schedule_id);
+        setSuccessMessage(null);
+        setError(null);
+
         try {
             const response = await fetch('/api/process-schedule', {
                 method: 'POST',
@@ -288,9 +298,13 @@ export default function ScheduleManagement() {
                 throw new Error(data.error || 'Failed to run schedule');
             }
 
-            alert(`สำเร็จ: ${data.message}\nGUID: ${data.guid}`);
+            setSuccessMessage(`สำเร็จ: ${data.message} (GUID: ${data.guid})`);
+
+            // Auto dismiss success message
+            setTimeout(() => setSuccessMessage(null), 5000);
+
         } catch (err: any) {
-            alert(`เกิดข้อผิดพลาด: ${err.message}`);
+            setError(`เกิดข้อผิดพลาด: ${err.message}`);
         } finally {
             setRunningId(null);
         }
@@ -423,7 +437,57 @@ export default function ScheduleManagement() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-50">
+        <main className="min-h-screen bg-slate-50 relative">
+            {/* Success Message Toast */}
+            {successMessage && (
+                <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-right-full duration-300">
+                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-emerald-600">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">{successMessage}</span>
+                        <button onClick={() => setSuccessMessage(null)} className="text-emerald-500 hover:text-emerald-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 text-amber-600">
+                            <div className="p-2 bg-amber-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900">ยืนยันการส่งอีเมล</h3>
+                        </div>
+                        <p className="text-slate-600">
+                            คุณต้องการทดสอบส่งอีเมล "{confirmModal.schedule?.schedule_name}" ทันทีหรือไม่?
+                        </p>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => setConfirmModal({ isOpen: false, schedule: null })}
+                                className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors"
+                            >
+                                ยกเลิก
+                            </button>
+                            <button
+                                onClick={executeRunSchedule}
+                                className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors shadow-sm shadow-blue-200"
+                            >
+                                ยืนยันส่งทันที
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -675,9 +739,8 @@ export default function ScheduleManagement() {
                                 </button>
                             </div>
                         </form>
-                    </div >
-                )
-                }
+                    </div>
+                )}
 
                 {/* Schedules List */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -743,7 +806,7 @@ export default function ScheduleManagement() {
                         </div>
                     )}
                 </div>
-            </div >
-        </main >
+            </div>
+        </main>
     );
 }

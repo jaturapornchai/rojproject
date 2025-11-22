@@ -8,6 +8,7 @@ interface AccessRecord {
     is_admin?: boolean;
     is_active?: boolean;
     shopid?: string;
+    allowed_reports?: string[];
     created_at?: string;
     updated_at?: string;
 }
@@ -101,6 +102,7 @@ const handler = NextAuth({
                 (user as any).role = "admin";
                 (user as any).isAdmin = true;
                 (user as any).shopId = SHOP_ID_SERVER;
+                (user as any).allowed_reports = []; // Admins have access to everything
                 return true;
             }
 
@@ -119,6 +121,7 @@ const handler = NextAuth({
             (user as any).role = role;
             (user as any).isAdmin = role === "admin";
             (user as any).shopId = SHOP_ID_SERVER;
+            (user as any).allowed_reports = record.allowed_reports || [];
 
             return true;
         },
@@ -128,6 +131,7 @@ const handler = NextAuth({
                 session.user.role = role;
                 session.user.isAdmin = role === "admin";
                 session.user.shopId = token.shopId as string | undefined;
+                (session.user as any).allowed_reports = (token.allowed_reports as string[] | undefined) || [];
             }
             return session;
         },
@@ -137,6 +141,7 @@ const handler = NextAuth({
                 token.role = role;
                 token.isAdmin = role === "admin";
                 token.shopId = (user as any).shopId ?? token.shopId ?? SHOP_ID_SERVER;
+                token.allowed_reports = (user as any).allowed_reports || [];
             }
             return token;
         },

@@ -9,6 +9,7 @@ interface AllowedUser {
     email: string;
     role: 'admin' | 'user';
     is_active?: boolean;
+    allowed_reports?: string[];
     created_at?: string;
     updated_at?: string;
 }
@@ -17,12 +18,14 @@ interface FormState {
     email: string;
     role: 'admin' | 'user';
     is_active: boolean;
+    allowed_reports: string[];
 }
 
 const defaultFormState: FormState = {
     email: '',
     role: 'user',
     is_active: true,
+    allowed_reports: [],
 };
 
 export default function AccessManagementPage() {
@@ -35,6 +38,10 @@ export default function AccessManagementPage() {
     const [formState, setFormState] = useState<FormState>(defaultFormState);
     const [editingUser, setEditingUser] = useState<AllowedUser | null>(null);
     const shopId = SHOP_ID_PUBLIC;
+
+    const AVAILABLE_REPORTS = [
+        { id: 'SRR40001', name: 'รายงานวิเคราะห์ขายขาดทุน (SRR40001)' },
+    ];
 
     const adminCount = useMemo(() => users.filter((user) => user.role === 'admin').length, [users]);
     const activeCount = useMemo(() => users.filter((user) => user.is_active !== false).length, [users]);
@@ -78,6 +85,7 @@ export default function AccessManagementPage() {
             email: record.email,
             role: (record.role ?? 'user'),
             is_active: record.is_active !== false,
+            allowed_reports: record.allowed_reports || [],
         });
         setShowForm(true);
     };
@@ -86,6 +94,15 @@ export default function AccessManagementPage() {
         setEditingUser(null);
         setFormState(defaultFormState);
         setShowForm(false);
+    };
+
+    const toggleReport = (reportId: string) => {
+        const current = formState.allowed_reports || [];
+        if (current.includes(reportId)) {
+            setFormState({ ...formState, allowed_reports: current.filter(id => id !== reportId) });
+        } else {
+            setFormState({ ...formState, allowed_reports: [...current, reportId] });
+        }
     };
 
     const handleSubmit = async (event: React.FormEvent) => {
@@ -109,6 +126,7 @@ export default function AccessManagementPage() {
                     role: formState.role,
                     is_admin: formState.role === 'admin',
                     is_active: formState.is_active,
+                    allowed_reports: formState.allowed_reports,
                     created_at: editingUser?.created_at ?? now,
                     updated_at: now,
                 },
@@ -239,7 +257,7 @@ export default function AccessManagementPage() {
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm shadow-sm ${showForm
                             ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md'
-                        }`}
+                            }`}
                     >
                         {showForm ? (
                             <>
@@ -299,7 +317,26 @@ export default function AccessManagementPage() {
                                     <option value="admin">ผู้ดูแลระบบ</option>
                                 </select>
                             </div>
-                            <div className="md:col-span-3 flex items-center gap-4">
+
+                            {/* Report Permissions */}
+                            <div className="md:col-span-3 space-y-3 border-t border-gray-100 pt-4">
+                                <label className="block text-sm font-semibold text-gray-700">สิทธิ์การเข้าถึงรายงาน</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {AVAILABLE_REPORTS.map(report => (
+                                        <label key={report.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={(formState.allowed_reports || []).includes(report.id)}
+                                                onChange={() => toggleReport(report.id)}
+                                                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{report.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-3 flex items-center gap-4 pt-4 border-t border-gray-100">
                                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                                     <input
                                         type="checkbox"
@@ -367,6 +404,7 @@ export default function AccessManagementPage() {
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">อีเมล</th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">บทบาท</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">สิทธิ์รายงาน</th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">สถานะ</th>
                                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">จัดการ</th>
                                     </tr>
@@ -381,15 +419,28 @@ export default function AccessManagementPage() {
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${user.role === 'admin'
                                                         ? 'bg-blue-50 text-blue-700 border-blue-100'
                                                         : 'bg-gray-100 text-gray-700 border-gray-200'
-                                                    }`}>
+                                                        }`}>
                                                         {user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งานทั่วไป'}
                                                     </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {(user.allowed_reports && user.allowed_reports.length > 0) ? (
+                                                            user.allowed_reports.map(r => (
+                                                                <span key={r} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                                    {r}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400">-</span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${isActive
                                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                                         : 'bg-red-50 text-red-700 border-red-100'
-                                                    }`}>
+                                                        }`}>
                                                         {isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                                                     </span>
                                                 </td>
