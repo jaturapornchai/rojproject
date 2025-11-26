@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 
 const API_BASE_URL = (process.env.DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === 'true')
-    ? 'http://localhost:8108/v1'
+    ? (process.env.BACKEND_URL || 'http://localhost:8108/v1')
     : 'https://smlgoapi.dedepos.com/v1';
 
 interface ResultGetRow {
@@ -47,6 +47,8 @@ export async function POST(request: Request) {
 
         const resultFromQueryPayload = { ...payload, guid };
 
+        console.log(`[generate-report] Calling: ${API_BASE_URL}/resultfromquery`);
+
         const resultFromQueryResponse = await fetch(`${API_BASE_URL}/resultfromquery`, {
             method: 'POST',
             headers: {
@@ -77,6 +79,8 @@ export async function POST(request: Request) {
         const effectiveGuid = typeof resultFromQueryJson?.guid === 'string' && resultFromQueryJson.guid.trim().length > 0
             ? resultFromQueryJson.guid.trim()
             : guid;
+
+        console.log(`[generate-report] Calling: ${API_BASE_URL}/resultget`);
 
         const resultGetResponse = await fetch(`${API_BASE_URL}/resultget`, {
             method: 'POST',

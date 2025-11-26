@@ -1,0 +1,189 @@
+# Documentation Query System
+
+## 🎯 คำสั่งที่รองรับ
+
+### Basic Commands
+```
+read guide [topic]          - อ่าน guide ทั้งหมดหรือหัวข้อที่ระบุ
+search [keyword]            - ค้นหา keyword ใน guide
+find [section]              - ค้นหาหัวข้อย่อยเฉพาะ
+list commands              - แสดงคำสั่งทั้งหมด
+help [command]             - แสดงคำอธิบายคำสั่ง
+```
+
+### Example Queries
+
+**ค้นหาข้อมูล API:**
+```
+query: "API endpoints"
+query: "generate-report"
+query: "PDF configuration"
+query: "MongoDB"
+```
+
+**ค้นหาวิธีการทำงาน:**
+```
+query: "how to add new report"
+query: "permissions"
+query: "error handling"
+query: "testing"
+```
+
+**ค้นหาตัวอย่างโค้ด:**
+```
+query: "SQL query example"
+query: "React component"
+query: "PDF config"
+query: "user session"
+```
+
+**ค้นหาการตั้งค่า:**
+```
+query: "environment variables"
+query: "debug configuration"
+query: "deployment"
+query: "database schema"
+```
+
+## 📖 วิธีใช้งาน
+
+### คำสั่งพื้นฐาน
+```bash
+# อ่าน guide ทั้งหมด
+read guide
+
+# อ่านหัวข้อเฉพาะ
+read guide API
+read guide database
+read guide permissions
+
+# ค้นหาคำสำคัญ
+search "PDF"
+search "error handling"
+search "React"
+
+# ค้นหาใน section เฉพาะ
+find "การเพิ่มรายงานใหม่"
+find "API Endpoints"
+```
+
+### คำสั่งขั้นสูง
+```bash
+# ค้นหาแบบละเอียด
+query: "วิธีสร้างรายงานใหม่ต้องทำอย่างไร"
+query: "จะแก้ไข PDF format ยังไง"
+query: "ตรวจสอบสิทธิ์ผู้ใช้งานยังไง"
+
+# ค้นหาและกรอง
+filter section: "API"
+filter type: "code"
+filter topic: "security"
+```
+
+## 🔧 System Features
+
+### Query Processing
+- **Natural Language Support**: รองรับภาษาไทยและอังกฤษ
+- **Smart Search**: ค้นหาอัจฉริยะด้วย keyword matching
+- **Contextual Results**: แสดงผลตามบริบทของคำถาม
+- **Code Extraction**: ดึงตัวอย่างโค้ดที่เกี่ยวข้อง
+
+### Response Format
+```json
+{
+    "query": "คำถามที่ส่งมา",
+    "found": true,
+    "section": "ชื่อหัวข้อ",
+    "content": "เนื้อหาที่เกี่ยวข้อง",
+    "related_sections": ["หัวข้อที่เกี่ยวข้อง"],
+    "code_examples": ["ตัวอย่างโค้ด"],
+    "next_steps": ["ขั้นตอนต่อไป"]
+}
+```
+
+## 📝 Query Categories
+
+### 📚 Learning & Understanding
+```
+query: "ระบบทำงานยังไง"
+query: "โครงสร้างโปรเจ็กต์"
+query: "ขั้นตอนการทำงาน"
+query: "workflow"
+```
+
+### 🛠️ Development Tasks
+```
+query: "เพิ่มรายงานใหม่"
+query: "แก้ไข PDF layout"
+query: "ตั้งค่า database"
+query: "เพิ่มคอลัมน์"
+query: "สร้าง API endpoint"
+```
+
+### 🐛 Debugging & Issues
+```
+query: "แก้ปัญหา error"
+query: "debug mode"
+query: "log files"
+query: "troubleshooting"
+```
+
+### 📊 Configuration & Setup
+```
+query: "environment setup"
+query: "config file"
+query: "database connection"
+query: "user permissions"
+```
+
+## 🚀 Advanced Usage
+
+### Batch Queries
+```bash
+# ค้นหาหลายหัวข้อพร้อมกัน
+multi-query:
+  - "API endpoints"
+  - "error handling" 
+  - "PDF configuration"
+```
+
+### Conditional Search
+```bash
+# ค้นหาตามเงื่อนไข
+search if: "section == 'API Endpoints'"
+find where: "contains('code example')"
+```
+
+### Export & Format
+```bash
+# ส่งออกข้อมูล
+export section: "API"
+format: "markdown"
+output: "api_guide.md"
+
+# สร้าง summary
+summary: "การเพิ่มรายงานใหม่"
+length: "short"
+```
+
+## 💡 Tips & Best Practices
+
+### การถามที่มีประสิทธิภาพ
+- ใช้คำสำคัญที่ชัดเจน
+- เริ่มต้นด้วย "how to", "what is", "where is"
+- ระบุส่วนที่ต้องการ (API, Database, UI)
+- ใช้ภาษาไทยหรืออังกฤษตามความถนัด
+
+### การรับคำตอบ
+- อ่าน related_sections เพื่อเข้าใจบริบท
+- ดู code_examples เพื่อนำไปใช้งานจริง
+- ทำตาม next_steps ที่ระบุไว้
+- ตรวจสอบ original guide ถ้าต้องการรายละเอียดเต็ม
+
+## 🎯 Quick Reference
+
+**พร้อมใช้งานทันที:**
+- `read guide` - เริ่มต้นที่ guide หลัก
+- `search "API"` - ค้นหา API ทั้งหมด
+- `query: "วิธีเพิ่มรายงาน"` - ถามเป็นภาษาไทย
+- `help` - ดูคำสั่งทั้งหมด

@@ -13,8 +13,11 @@ export default function Navbar() {
 
     if (pathname === '/login') return null;
 
-    const isDebug = process.env.NEXT_PUBLIC_DEBUG === 'true';
-    const apiUrl = isDebug ? 'http://localhost:8108/v1' : 'https://smlgoapi.dedepos.com/v1';
+    const isDebug = process.env.DEBUG === 'true';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
+    const apiUrl = isDebug 
+        ? (backendUrl || 'http://localhost:8108/v1')
+        : 'https://smlgoapi.dedepos.com/v1';
 
     return (
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">

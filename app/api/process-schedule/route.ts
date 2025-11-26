@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 
 const API_BASE_URL = (process.env.DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === 'true')
-    ? 'http://localhost:8108/v1' 
+    ? (process.env.BACKEND_URL || 'http://localhost:8108/v1')
     : 'https://smlgoapi.dedepos.com/v1';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+
+        console.log(`[process-schedule] Calling: ${API_BASE_URL}/sendreportemail`);
 
         const response = await fetch(`${API_BASE_URL}/sendreportemail`, {
             method: 'POST',
