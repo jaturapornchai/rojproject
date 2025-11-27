@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -10,14 +10,19 @@ export default function Navbar() {
     const pathname = usePathname();
     const { data: session } = useSession();
     const [isManualMenuOpen, setIsManualMenuOpen] = useState(false);
+    const [isDebug, setIsDebug] = useState(false);
+    const [apiUrl, setApiUrl] = useState('https://smlgoapi.dedepos.com/v1');
+
+    useEffect(() => {
+        const debug = process.env.DEBUG === 'true';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
+        setIsDebug(debug);
+        setApiUrl(debug 
+            ? (backendUrl || 'http://localhost:8108/v1')
+            : 'https://smlgoapi.dedepos.com/v1');
+    }, []);
 
     if (pathname === '/login') return null;
-
-    const isDebug = process.env.DEBUG === 'true';
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
-    const apiUrl = isDebug 
-        ? (backendUrl || 'http://localhost:8108/v1')
-        : 'https://smlgoapi.dedepos.com/v1';
 
     return (
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">

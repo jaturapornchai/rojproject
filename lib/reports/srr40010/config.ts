@@ -1,73 +1,29 @@
-# ----------------------------------------รายงานใหม่---------------------------------------------------
+// Config สำหรับ SRR40010 - รายงานเปรียบเทียบราคาขาย
 
-สร้างรายงานใหม่ โดย ไปอ่าน guide จาก ไฟล์ DEVELOPER_GUIDE.md
+import { SHOP_ID_PUBLIC } from '@/lib/constants';
+import type { 
+    QueryConfig, 
+    PdfConfig, 
+    DatePreset, 
+    DayOfWeek,
+    ReportFilters,
+    CustomerFilterState,
+    BranchFilterState
+} from './types';
 
-ชื่อรายงาน : รายงานสรุปยอดขายประจำวัน
-รหัสรายงาน : SRR50003
-BASE_QUERY
-```
-SELECT 
-       doc_date,(CASE when (pos_id <> '') THEN 1 ELSE 0 END) as pos_status,(CASE when (pos_id <> '') THEN pos_id ELSE 'ขายหลังร้าน' END) as pos_id,
-	   cashier_code,(select name_1 from erp_user where code=cashier_code) as cashier_name,
-       SUM(Totale1) Total_cash,
-	   sum(Totale9) Total_wallet,
-       SUM(Totale2) Total_card,
-       SUM(Totale3) Total_amount,
-       SUM(Totale4) Total_1,
-       SUM(Totale5) Total_2,
-       SUM(Totale6) Total_3,
-       SUM(Totale7) Total_s,
-       SUM(Totale8) Total_d
-FROM 
-(
-       select doc_date,pos_id,cashier_code,(select name_1 from erp_user where code=cashier_code) as cashier_name
-	   
-	   ---เงินสด---
-	   ,(CASE when (is_pos = 1) THEN (((select cb_trans.total_net_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-		 +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END))
-		 -(select cb_trans.card_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-		 -(select cb_trans.wallet_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-		 ) ELSE 0 END) AS Totale1 --เงินสด
-		---เงินเชื่อ--- 
-              ,(CASE when (is_pos = 1) THEN (select cb_trans.card_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no) ELSE 0 END) AS Totale2
-		---wallet---	  
-			  ,(CASE when (is_pos = 1) THEN ( (select cb_trans.wallet_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-		 +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END)
-		 ) ELSE 0 END) AS Totale9 --wallet
-		
-		---	Total_amount---  
-			  ,(CASE when (is_pos = 1) THEN (select cb_trans.total_net_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-			  +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END) ELSE 0 END) AS Totale3 --Total_amount
-			  
-			  ,(CASE when (is_pos = 0) and (inquiry_type = 1) THEN total_amount ELSE 0 END) AS Totale4
-			  ,(CASE when (is_pos = 0) and (inquiry_type = 0) THEN total_amount ELSE 0 END) AS Totale5
-			  ,(CASE when (is_pos = 0) THEN total_amount ELSE 0 END) AS Totale6
-			  ,(CASE when (is_pos in (0,1)) THEN (total_amount+(CASE when discount_word <> '' THEN discount_word::numeric ELSE 0 END)) ELSE 0 END) AS Totale7,
-	      (CASE when discount_word <> '' THEN discount_word::numeric ELSE 0 END) as Totale8
+// Report Info
+export const REPORT_ID = 'SRR40010';
+export const REPORT_NAME = 'รายงานเปรียบเทียบราคาขาย';
 
-       from  ic_trans where trans_flag = 44 and last_status = 0 and doc_date between '2025-11-01' and '2025-11-25'   ) t
-GROUP BY doc_date,pos_id,cashier_code order by doc_date,pos_id,cashier_code
-```
-ให้เพิ่มเงือนไขให้ด้วย
-
-
-
-# ----------------------------------------รายงานใหม่---------------------------------------------------
-
-สร้างรายงานใหม่ โดย ไปอ่าน guide จาก ไฟล์ DEVELOPER_GUIDE.md
-
-ชื่อรายงาน : รายงานเปรียบเทียบราคาขาย
-รหัสรายงาน : SRR40010
-BASE_QUERY
-```
-with balance_cost as(
+// Base Query Template - ใช้ {{placeholder}} สำหรับค่าที่ต้องแทนที่
+export const BASE_QUERY_TEMPLATE = `with balance_cost as(
 select ic_code, ic_name, ic_unit_code, balance_qty/unit_standard_ratio as balance_qty, average_cost*unit_standard_ratio as average_cost, average_cost_end
 , balance_amount
 from (select coalesce((select stand_value/divide_value 
 from ic_unit_use 
 where ic_unit_use.ic_code=temp2.ic_code and ic_unit_use.code=temp2.ic_unit_code),1) as unit_standard_ratio,ic_code, ic_name, balance_qty, ic_unit_code
 , case when balance_qty=0 then 0 else balance_amount/balance_qty end as average_cost
-, coalesce(((select  average_cost from ic_trans_detail where ic_trans_detail.last_status=0  and ic_trans_detail.item_code=temp2.ic_code and doc_date_calc<='2025-11-25' 
+, coalesce(((select  average_cost from ic_trans_detail where ic_trans_detail.last_status=0  and ic_trans_detail.item_code=temp2.ic_code and doc_date_calc<='{{end_date}}'
 and ((trans_flag in (70,54,60,58,310,12) or (trans_flag=66 and (qty>0 or sum_of_cost>0 )) or (trans_flag=14) or (trans_flag=48 and inquiry_type < 2)) 
 	or (trans_flag in (56,68,72,44) or (trans_flag=66 and (qty<0 or sum_of_cost<0 )) or (trans_flag=46)  or (trans_flag=16 ) or (trans_flag=311 )) 
 	and not (ic_trans_detail.doc_ref <> '' and ic_trans_detail.is_pos = 1)) order by doc_date_calc desc,doc_time desc ,line_number desc  offset 0 limit 1 )*unit_ratio),0) as average_cost_end
@@ -84,13 +40,12 @@ from (select item_code as ic_code, (select name_1 from ic_inventory where ic_inv
 	then -1* sum_of_cost_1 else sum_of_cost_1 end else 0 end))+coalesce(profit_lost_cost_amount, 0)),0) as balance_amount
 
 from ic_trans_detail where ic_trans_detail.last_status=0  and ic_trans_detail.item_type<>5  and (select item_type from ic_inventory where ic_inventory.code = ic_trans_detail.item_code) not in (1,3)  
-and doc_date_calc<='2025-11-25' 
+and doc_date_calc<='{{end_date}}' 
 group by item_code) as temp1) as temp2  
 where  ( balance_qty<>0 or balance_amount<>0)) as final 
 order by ic_code
 
 )
-----------------------
 
 select doc_date,doc_no,cust_name,sale_name,item_code,item_name,qty,unit_code,price,discount
 ,case when price_cust <> 0 then price_cust else price_cust_unit end as price_cust
@@ -175,17 +130,223 @@ else '0' end , 0) as price_cust
 else '0' end , 0)*(select stand_value from ic_unit_use where ic_unit_use.ic_code = ic_trans_detail.item_code and ic_unit_use.code = ic_trans_detail.unit_code limit 1) as price_cust_unit
 ,(select remark from ic_trans where ic_trans.doc_no = ic_trans_detail.doc_no and ic_trans.trans_flag = ic_trans_detail.trans_flag) as remark
 from ic_trans_detail 
-where trans_flag = 44 and last_status = 0 and doc_date between '2025-11-01' and '2025-11-25'
+where trans_flag = 44 and last_status = 0 and doc_date between '{{start_date}}' and '{{end_date}}'{{customer_filter}}{{branch_filter}}{{sale_type_filter}}
     
 order by doc_date,doc_no
 ) as temp1 
 ) as temp2 
-where case when 0 = 0 then (price-coalesce(case when price_cust <> 0 then price_cust else price_cust_unit end,0)) <> 0
-	when 0=1 then (price-coalesce(case when price_cust <> 0 then price_cust else price_cust_unit end,0)) > 0
-	when 0=2 then (price-coalesce(case when price_cust <> 0 then price_cust else price_cust_unit end,0)) < 0
-	else 1=1 end
-```
-ให้เพิ่มเงือนไขให้ด้วย
-(ตอบเป็นภาษาไทย)
+where {{diff_filter_condition}}`;
 
-# ----------------------------------------รายงานใหม่---------------------------------------------------
+// Default Summary Config
+export const DEFAULT_SUMMARY_CONFIG = {
+    levels: [{
+        group_by_fields: ["doc_date"],
+        sum_fields: ["qty", "sum_amount", "diff"],
+        typejson: 1
+    }],
+    grand_total: true,
+    grand_total_type: 99
+};
+
+// Default Query Config
+export const getDefaultQueryConfig = (): QueryConfig => ({
+    shopid: SHOP_ID_PUBLIC,
+    limit: 5000,
+    query_items: [{
+        alias: "price_comparison",
+        query: BASE_QUERY_TEMPLATE,
+        summary_config: DEFAULT_SUMMARY_CONFIG
+    }]
+});
+
+// Column Schema
+export const COLUMN_SCHEMA = {
+    "doc_date": {
+        label: "วันที่",
+        flex: 8,
+        align: "L" as const,
+        data_type: "date",
+        format: "dd/MM/yyyy",
+        use_buddhist_year: true
+    },
+    "doc_no": {
+        label: "เลขที่เอกสาร",
+        flex: 10,
+        align: "L" as const
+    },
+    "cust_name": {
+        label: "ลูกค้า",
+        flex: 15,
+        align: "L" as const
+    },
+    "item_code": {
+        label: "รหัสสินค้า",
+        flex: 10,
+        align: "L" as const
+    },
+    "item_name": {
+        label: "ชื่อสินค้า",
+        flex: 15,
+        align: "L" as const
+    },
+    "qty": {
+        label: "จำนวน",
+        flex: 8,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00"
+    },
+    "unit_code": {
+        label: "หน่วย",
+        flex: 6,
+        align: "C" as const
+    },
+    "price": {
+        label: "ราคาขาย",
+        flex: 8,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00"
+    },
+    "price_cust": {
+        label: "ราคามาตรฐาน",
+        flex: 8,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00"
+    },
+    "diff": {
+        label: "ส่วนต่าง",
+        flex: 8,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00",
+        text_color_negative: "#FF0000"
+    },
+    "sum_amount": {
+        label: "มูลค่าส่วนต่าง",
+        flex: 10,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00",
+        text_color_negative: "#FF0000"
+    }
+};
+
+// Default PDF Config
+export const getDefaultPdfConfig = (thaiStartDate: string, thaiEndDate: string): PdfConfig => ({
+    shopid: SHOP_ID_PUBLIC,
+    pdf_config: {
+        title: `${REPORT_NAME} (${REPORT_ID})`,
+        description: `ตั้งแต่วันที่ ${thaiStartDate} ถึงวันที่ ${thaiEndDate}`,
+        orientation: "L",
+        page_size: "A4",
+        title_align: "C",
+        description_align: "L"
+    },
+    layout_config: {
+        schema_version: 1,
+        styles: {
+            use_fill: false,
+            header: {
+                background: "#FFFFFF",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            detail: {
+                background: "#FFFFFF",
+                text: "#000000",
+                border: "#E0E0E0"
+            },
+            summary: {
+                background: "#F5F5F5",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            level_1: {
+                background: "#F5F5F5",
+                text: "#000000",
+                border: "#000000",
+                font_weight: "bold"
+            },
+            table: {
+                row_spacing: 0,
+                column_spacing: 2,
+                grid_color: "#CCCCCC"
+            }
+        },
+        sections: [{
+            alias: "price_comparison",
+            row_type: "detail",
+            columns: [
+                { field: "doc_date" },
+                { field: "doc_no" },
+                { field: "cust_name" },
+                { field: "item_code" },
+                { field: "item_name" },
+                { field: "qty" },
+                { field: "unit_code" },
+                { field: "price" },
+                { field: "price_cust" },
+                { field: "diff" },
+                { field: "sum_amount" }
+            ]
+        }],
+        column_schema: COLUMN_SCHEMA
+    }
+});
+
+// Date Presets
+export const DATE_PRESETS: DatePreset[] = [
+    { value: 'today', label: 'วันนี้' },
+    { value: 'yesterday', label: 'เมื่อวานนี้' },
+    { value: 'this_week', label: 'สัปดาห์นี้' },
+    { value: 'last_week', label: 'สัปดาห์ก่อน' },
+    { value: 'this_month', label: 'เดือนนี้' },
+    { value: 'last_month', label: 'เดือนก่อน' },
+    { value: 'this_year', label: 'ปีนี้' },
+    { value: 'last_year', label: 'ปีก่อน' },
+];
+
+// Days of Week
+export const DAYS_OF_WEEK: DayOfWeek[] = [
+    { value: 0, label: 'อาทิตย์' },
+    { value: 1, label: 'จันทร์' },
+    { value: 2, label: 'อังคาร' },
+    { value: 3, label: 'พุธ' },
+    { value: 4, label: 'พฤหัสบดี' },
+    { value: 5, label: 'ศุกร์' },
+    { value: 6, label: 'เสาร์' },
+];
+
+// Thai Months
+export const THAI_MONTHS = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+];
+
+// Default Filter State
+export const getDefaultCustomerFilterState = (): CustomerFilterState => ({
+    filterType: 'all',
+    selectedCustomer: '',
+    rangeStart: '',
+    rangeEnd: '',
+    selectedCustomers: []
+});
+
+export const getDefaultBranchFilterState = (): BranchFilterState => ({
+    filterType: 'all',
+    selectedBranch: '',
+    rangeStart: '',
+    rangeEnd: '',
+    selectedBranches: []
+});
+
+export const getDefaultReportFilters = (): ReportFilters => ({
+    customer: getDefaultCustomerFilterState(),
+    branch: getDefaultBranchFilterState(),
+    diffFilter: '0',
+    saleType: 'all'
+});
