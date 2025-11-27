@@ -4,9 +4,9 @@
 // ใช้ร่วมกันระหว่างหน้าหลักและหน้า Schedule
 
 import { useState } from 'react';
-import type { 
-    Customer, 
-    Branch, 
+import type {
+    Customer,
+    Branch,
     ReportFilters,
     FilterType,
     DiffFilterType,
@@ -17,31 +17,31 @@ interface FilterPanelProps {
     filters: ReportFilters;
     customers: Customer[];
     branches: Branch[];
-    
+
     // Customer Filter callbacks
     onCustomerFilterTypeChange: (type: FilterType) => void;
     onSelectedCustomerChange: (code: string) => void;
     onCustomerRangeStartChange: (code: string) => void;
     onCustomerRangeEndChange: (code: string) => void;
     onToggleCustomerSelection: (code: string) => void;
-    
+
     // Branch Filter callbacks
     onBranchFilterTypeChange: (type: FilterType) => void;
     onSelectedBranchChange: (code: string) => void;
     onBranchRangeStartChange: (code: string) => void;
     onBranchRangeEndChange: (code: string) => void;
     onToggleBranchSelection: (code: string) => void;
-    
+
     // Other Filter callbacks
     onDiffFilterChange: (filter: DiffFilterType) => void;
     onSaleTypeChange: (type: SaleType) => void;
-    
+
     // Optional: แสดงหรือซ่อนส่วนต่างๆ
     showSaleType?: boolean;
     showDiffFilter?: boolean;
     showCustomerFilter?: boolean;
     showBranchFilter?: boolean;
-    
+
     // Compact mode สำหรับ schedule form
     compact?: boolean;
 }
@@ -70,8 +70,8 @@ export function FilterPanel({
 }: FilterPanelProps) {
     const [customerSearch, setCustomerSearch] = useState('');
     const [branchSearch, setBranchSearch] = useState('');
-    const [showCustomerSection, setShowCustomerSection] = useState(!compact);
-    const [showBranchSection, setShowBranchSection] = useState(!compact);
+    const [showCustomerSection, setShowCustomerSection] = useState(false);
+    const [showBranchSection, setShowBranchSection] = useState(false);
 
     // Filter customers by search
     const filteredCustomers = customers.filter(cust => {
@@ -87,15 +87,15 @@ export function FilterPanel({
                branch.name_1.toLowerCase().includes(searchLower);
     });
 
-    const filterTypeLabels: Record<FilterType, string> = {
-        'all': 'ทั้งหมด',
-        'single': 'เลือก 1 รายการ',
-        'range': 'ช่วง',
-        'multiple': 'เลือกหลายรายการ'
-    };
+    const filterTypeButtons = [
+        { value: 'all' as const, label: 'ทั้งหมด' },
+        { value: 'single' as const, label: 'เลือกเดี่ยว' },
+        { value: 'range' as const, label: 'ช่วง' },
+        { value: 'multiple' as const, label: 'เลือกหลายรายการ' }
+    ];
 
     return (
-        <div className={`space-y-6 ${compact ? 'text-sm' : ''}`}>
+        <div className={`space-y-${compact ? '4' : '6'}`}>
             {/* Sale Type & Diff Filter */}
             {(showSaleType || showDiffFilter) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,9 +113,9 @@ export function FilterPanel({
                                         type="button"
                                         onClick={() => onSaleTypeChange(value as SaleType)}
                                         className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                                            filters.saleType === value 
-                                                ? 'bg-blue-600 text-white' 
-                                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                                            filters.saleType === value
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                         }`}
                                     >
                                         {label}
@@ -124,7 +124,7 @@ export function FilterPanel({
                             </div>
                         </div>
                     )}
-                    
+
                     {showDiffFilter && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">📊 แสดงผลต่าง</label>
@@ -139,9 +139,9 @@ export function FilterPanel({
                                         type="button"
                                         onClick={() => onDiffFilterChange(value as DiffFilterType)}
                                         className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                                            filters.diffFilter === value 
-                                                ? 'bg-blue-600 text-white' 
-                                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                                            filters.diffFilter === value
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                         }`}
                                     >
                                         {label}
@@ -155,40 +155,31 @@ export function FilterPanel({
 
             {/* Customer Filter */}
             {showCustomerFilter && (
-                <div className="border-t border-slate-200 pt-6">
+                <div className="border border-slate-200 rounded-lg">
                     <button
                         type="button"
                         onClick={() => setShowCustomerSection(!showCustomerSection)}
-                        className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                        className="w-full px-4 py-3 flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100 transition-colors rounded-t-lg"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-transform ${showCustomerSection ? 'rotate-180' : ''}`}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                        🧑‍💼 ลูกค้า
-                        {filters.customer.filterType !== 'all' && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                {filters.customer.filterType === 'single' ? '1 รายการ' : 
-                                 filters.customer.filterType === 'range' ? 'ช่วง' : 
-                                 `${filters.customer.selectedCustomers.length} รายการ`}
-                            </span>
-                        )}
+                        <span className="font-medium text-slate-900">กรองลูกค้า</span>
+                        <span className="text-slate-500">{showCustomerSection ? '▼' : '▶'}</span>
                     </button>
 
                     {showCustomerSection && (
-                        <div className="mt-3 space-y-4 bg-slate-50 p-4 rounded-lg">
+                        <div className="p-4 space-y-3">
                             <div className="flex flex-wrap gap-2">
-                                {(['all', 'single', 'range', 'multiple'] as const).map((type) => (
+                                {filterTypeButtons.map(({ value, label }) => (
                                     <button
-                                        key={type}
+                                        key={value}
                                         type="button"
-                                        onClick={() => onCustomerFilterTypeChange(type)}
+                                        onClick={() => onCustomerFilterTypeChange(value)}
                                         className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                                            filters.customer.filterType === type
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                                            filters.customer.filterType === value
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                         }`}
                                     >
-                                        {filterTypeLabels[type]}
+                                        {label}
                                     </button>
                                 ))}
                             </div>
@@ -197,7 +188,7 @@ export function FilterPanel({
                                 <select
                                     value={filters.customer.selectedCustomer}
                                     onChange={(e) => onSelectedCustomerChange(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                 >
                                     <option value="">-- เลือกลูกค้า --</option>
                                     {customers.map((cust) => (
@@ -209,66 +200,60 @@ export function FilterPanel({
                             )}
 
                             {filters.customer.filterType === 'range' && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-2">
                                     <select
                                         value={filters.customer.rangeStart}
                                         onChange={(e) => onCustomerRangeStartChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                     >
-                                        <option value="">-- ตั้งแต่ --</option>
+                                        <option value="">-- จาก --</option>
                                         {customers.map((cust) => (
-                                            <option key={cust.code} value={cust.code}>
-                                                {cust.code} - {cust.name_1}
-                                            </option>
+                                            <option key={cust.code} value={cust.code}>{cust.code}</option>
                                         ))}
                                     </select>
                                     <select
                                         value={filters.customer.rangeEnd}
                                         onChange={(e) => onCustomerRangeEndChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                     >
                                         <option value="">-- ถึง --</option>
                                         {customers.map((cust) => (
-                                            <option key={cust.code} value={cust.code}>
-                                                {cust.code} - {cust.name_1}
-                                            </option>
+                                            <option key={cust.code} value={cust.code}>{cust.code}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
 
                             {filters.customer.filterType === 'multiple' && (
-                                <div className="space-y-2">
+                                <div>
                                     <input
                                         type="text"
                                         placeholder="ค้นหาลูกค้า..."
                                         value={customerSearch}
                                         onChange={(e) => setCustomerSearch(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-slate-900"
                                     />
-                                    <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+                                    <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
                                         {filteredCustomers.map((cust) => (
                                             <label
                                                 key={cust.code}
-                                                className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                                                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={filters.customer.selectedCustomers.includes(cust.code)}
                                                     onChange={() => onToggleCustomerSelection(cust.code)}
-                                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                    className="mr-2"
                                                 />
-                                                <span className="text-sm text-slate-700">
+                                                <span className="text-sm text-slate-900">
                                                     {cust.code} - {cust.name_1}
                                                 </span>
                                             </label>
                                         ))}
                                     </div>
-                                    {filters.customer.selectedCustomers.length > 0 && (
-                                        <p className="text-xs text-slate-500">
-                                            เลือกแล้ว {filters.customer.selectedCustomers.length} รายการ
-                                        </p>
-                                    )}
+                                    <div className="mt-2 text-sm text-slate-600">
+                                        เลือกแล้ว: {filters.customer.selectedCustomers.length} รายการ
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -278,40 +263,31 @@ export function FilterPanel({
 
             {/* Branch Filter */}
             {showBranchFilter && (
-                <div className="border-t border-slate-200 pt-6">
+                <div className="border border-slate-200 rounded-lg">
                     <button
                         type="button"
                         onClick={() => setShowBranchSection(!showBranchSection)}
-                        className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                        className="w-full px-4 py-3 flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100 transition-colors rounded-t-lg"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-transform ${showBranchSection ? 'rotate-180' : ''}`}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                        🏢 สาขา
-                        {filters.branch.filterType !== 'all' && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                {filters.branch.filterType === 'single' ? '1 รายการ' : 
-                                 filters.branch.filterType === 'range' ? 'ช่วง' : 
-                                 `${filters.branch.selectedBranches.length} รายการ`}
-                            </span>
-                        )}
+                        <span className="font-medium text-slate-900">กรองสาขา</span>
+                        <span className="text-slate-500">{showBranchSection ? '▼' : '▶'}</span>
                     </button>
 
                     {showBranchSection && (
-                        <div className="mt-3 space-y-4 bg-slate-50 p-4 rounded-lg">
+                        <div className="p-4 space-y-3">
                             <div className="flex flex-wrap gap-2">
-                                {(['all', 'single', 'range', 'multiple'] as const).map((type) => (
+                                {filterTypeButtons.map(({ value, label }) => (
                                     <button
-                                        key={type}
+                                        key={value}
                                         type="button"
-                                        onClick={() => onBranchFilterTypeChange(type)}
+                                        onClick={() => onBranchFilterTypeChange(value)}
                                         className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                                            filters.branch.filterType === type
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                                            filters.branch.filterType === value
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                         }`}
                                     >
-                                        {filterTypeLabels[type]}
+                                        {label}
                                     </button>
                                 ))}
                             </div>
@@ -320,7 +296,7 @@ export function FilterPanel({
                                 <select
                                     value={filters.branch.selectedBranch}
                                     onChange={(e) => onSelectedBranchChange(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                 >
                                     <option value="">-- เลือกสาขา --</option>
                                     {branches.map((branch) => (
@@ -332,66 +308,60 @@ export function FilterPanel({
                             )}
 
                             {filters.branch.filterType === 'range' && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-2">
                                     <select
                                         value={filters.branch.rangeStart}
                                         onChange={(e) => onBranchRangeStartChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                     >
-                                        <option value="">-- ตั้งแต่ --</option>
+                                        <option value="">-- จาก --</option>
                                         {branches.map((branch) => (
-                                            <option key={branch.code} value={branch.code}>
-                                                {branch.code} - {branch.name_1}
-                                            </option>
+                                            <option key={branch.code} value={branch.code}>{branch.code}</option>
                                         ))}
                                     </select>
                                     <select
                                         value={filters.branch.rangeEnd}
                                         onChange={(e) => onBranchRangeEndChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                                     >
                                         <option value="">-- ถึง --</option>
                                         {branches.map((branch) => (
-                                            <option key={branch.code} value={branch.code}>
-                                                {branch.code} - {branch.name_1}
-                                            </option>
+                                            <option key={branch.code} value={branch.code}>{branch.code}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
 
                             {filters.branch.filterType === 'multiple' && (
-                                <div className="space-y-2">
+                                <div>
                                     <input
                                         type="text"
                                         placeholder="ค้นหาสาขา..."
                                         value={branchSearch}
                                         onChange={(e) => setBranchSearch(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-slate-900"
                                     />
-                                    <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+                                    <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
                                         {filteredBranches.map((branch) => (
                                             <label
                                                 key={branch.code}
-                                                className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                                                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={filters.branch.selectedBranches.includes(branch.code)}
                                                     onChange={() => onToggleBranchSelection(branch.code)}
-                                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                                    className="mr-2"
                                                 />
-                                                <span className="text-sm text-slate-700">
+                                                <span className="text-sm text-slate-900">
                                                     {branch.code} - {branch.name_1}
                                                 </span>
                                             </label>
                                         ))}
                                     </div>
-                                    {filters.branch.selectedBranches.length > 0 && (
-                                        <p className="text-xs text-slate-500">
-                                            เลือกแล้ว {filters.branch.selectedBranches.length} รายการ
-                                        </p>
-                                    )}
+                                    <div className="mt-2 text-sm text-slate-600">
+                                        เลือกแล้ว: {filters.branch.selectedBranches.length} รายการ
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -7,6 +7,7 @@
   - [Phase 2: Custom Hooks](#phase-2-custom-hooks-hooksreportsreportid)
   - [Phase 3: Shared Components](#phase-3-shared-components-componentsreportsreportid)
   - [Phase 4: Main Report Page](#phase-4-main-report-page)
+  - [Phase 4.1: ฟีเจอร์ประวัติการเรียกดูรายงาน](#phase-41-ฟีเจอร์ประวัติการเรียกดูรายงาน-report-access-logs)
   - [Phase 5: Schedule Management Page](#phase-5-schedule-management-page)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
@@ -907,10 +908,195 @@ export default function ReportPage() {
 
             {/* PDF Display */}
             {pdfUrl && <iframe src={pdfUrl} className="w-full h-screen" />}
+
+            {/* Report Access Logs - ดูหัวข้อ "ฟีเจอร์ประวัติการเรียกดูรายงาน" ด้านล่าง */}
         </main>
     );
 }
 ```
+
+---
+
+### Phase 4.1: ฟีเจอร์ประวัติการเรียกดูรายงาน (Report Access Logs)
+
+ทุกรายงานควรมีฟีเจอร์บันทึกประวัติการเรียกดู เพื่อติดตามการใช้งานและตรวจสอบย้อนหลังได้
+
+#### 4.1.1 เพิ่ม Interface `ReportLog`
+
+```typescript
+// เพิ่มไว้ด้านบนของไฟล์ page.tsx
+
+interface ReportLog {
+    email: string;
+    report_name: string;
+    conditions: string;
+    created_at: string;
+}
+```
+
+#### 4.1.2 เพิ่ม State สำหรับเก็บ logs
+
+```typescript
+export default function ReportPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const [logs, setLogs] = useState<ReportLog[]>([]); // ⭐ เพิ่ม state นี้
+    
+    // ... existing code
+}
+```
+
+#### 4.1.3 สร้างฟังก์ชัน fetchLogs และ saveLog
+
+```typescript
+// ฟังก์ชันดึงประวัติการเรียกดูรายงาน
+const fetchLogs = async () => {
+    try {
+        const response = await fetch('/api/mongodb/get', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                collection: 'report_access_logs',
+                filter: {
+                    shopid: SHOP_ID_PUBLIC,
+                    report_name: REPORT_ID  // ใช้ REPORT_ID จาก shared module
+                },
+                sort: { created_at: -1 },
+                limit: 20  // แสดง 20 รายการล่าสุด
+            }),
+        });
+        const data = await response.json();
+        if (data.data) {
+            setLogs(data.data);
+        }
+    } catch (error) {
+        console.error('Failed to fetch logs', error);
+    }
+};
+
+// ฟังก์ชันบันทึกประวัติการเรียกดูรายงาน
+const saveLog = async (conditions: string) => {
+    try {
+        const now = new Date().toISOString();
+        const normalizedEmail = session?.user?.email?.toLowerCase() || 'unknown';
+        await fetch('/api/mongodb/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                collection: 'report_access_logs',
+                filter: {
+                    shopid: SHOP_ID_PUBLIC,
+                    email: normalizedEmail,
+                    created_at: now,
+                },
+                data: {
+                    shopid: SHOP_ID_PUBLIC,
+                    email: normalizedEmail,
+                    report_name: REPORT_ID,  // ใช้ REPORT_ID จาก shared module
+                    conditions: conditions,
+                    created_at: now,
+                    updated_at: now,
+                },
+                upsert: true,
+            }),
+        });
+        fetchLogs(); // Refresh logs หลังบันทึก
+    } catch (error) {
+        console.error('Failed to save log', error);
+    }
+};
+```
+
+#### 4.1.4 เรียก fetchLogs ใน useEffect
+
+```typescript
+// เรียก fetchLogs เมื่อผู้ใช้มีสิทธิ์เข้าถึงรายงาน
+useEffect(() => {
+    if (status === 'loading') return;
+
+    const isAdmin = session?.user?.isAdmin;
+    const allowedReports = (session?.user as any)?.allowed_reports || [];
+    const hasAccess = isAdmin || allowedReports.includes(REPORT_ID);
+
+    if (!hasAccess) {
+        router.push('/');
+    } else {
+        fetchLogs();  // ⭐ เรียก fetchLogs เมื่อมีสิทธิ์
+    }
+}, [session, status, router]);
+```
+
+#### 4.1.5 เรียก saveLog ก่อนสร้างรายงาน
+
+```typescript
+const handleGenerateResult = async () => {
+    // ... validation code
+
+    try {
+        // ⭐ บันทึกประวัติก่อนสร้างรายงาน
+        const conditions = `Date: ${startDate.toLocaleDateString('th-TH')} - ${endDate.toLocaleDateString('th-TH')}`;
+        await saveLog(conditions);
+
+        // ... existing report generation code
+    } catch (error) {
+        // ... error handling
+    }
+};
+```
+
+#### 4.1.6 เพิ่ม UI แสดงประวัติการเรียกดู
+
+```tsx
+{/* Logs Section - เพิ่มไว้หลัง PDF Viewer */}
+<div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+    <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <h3 className="text-lg font-semibold text-slate-900">ประวัติการเรียกดูรายงาน</h3>
+    </div>
+    <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+                <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เวลา</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ผู้ใช้งาน</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เงื่อนไข</th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+                {logs.map((log, index) => (
+                    <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            {new Date(log.created_at).toLocaleString('th-TH')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {log.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            {log.conditions}
+                        </td>
+                    </tr>
+                ))}
+                {logs.length === 0 && (
+                    <tr>
+                        <td colSpan={3} className="px-6 py-4 text-center text-sm text-slate-500">
+                            ยังไม่มีประวัติการเรียกดู
+                        </td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+</div>
+```
+
+#### 4.1.7 สรุป Checklist สำหรับเพิ่มฟีเจอร์ประวัติการเรียกดู
+
+- [ ] เพิ่ม `interface ReportLog`
+- [ ] เพิ่ม `const [logs, setLogs] = useState<ReportLog[]>([])`
+- [ ] สร้างฟังก์ชัน `fetchLogs()`
+- [ ] สร้างฟังก์ชัน `saveLog(conditions: string)`
+- [ ] เรียก `fetchLogs()` ใน `useEffect` เมื่อมีสิทธิ์เข้าถึง
+- [ ] เรียก `saveLog()` ก่อนสร้างรายงานในฟังก์ชัน `handleGenerateResult()`
+- [ ] เพิ่ม UI section แสดงตารางประวัติ
 
 ---
 

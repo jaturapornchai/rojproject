@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,12 +24,20 @@ import {
     FilterSummary 
 } from '@/components/reports/srr40010';
 
+interface ReportLog {
+    email: string;
+    report_name: string;
+    conditions: string;
+    created_at: string;
+}
+
 export default function ReportSRR40010() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const [logs, setLogs] = useState<ReportLog[]>([]);
     
     // ใช้ Custom Hooks
-    const { startDate, endDate, setStartDate, setEndDate, handlePreset, handleMonthSelect, handleYearSelect } = useDateRange({ defaultPreset: 'thisYear' });
+    const { startDate, endDate, setStartDate, setEndDate, handlePreset, handleMonthSelect, handleYearSelect } = useDateRange({ defaultPreset: 'thisMonth' });
     const { customers, branches } = useMasterData();
     const {
         filters,
@@ -53,6 +61,73 @@ export default function ReportSRR40010() {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [queryLog, setQueryLog] = useState<any>(null);
+
+    const fetchLogs = async () => {
+        try {
+            const response = await fetch('/api/mongodb/get', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    collection: 'report_access_logs',
+                    filter: {
+                        shopid: SHOP_ID_PUBLIC,
+                        report_name: REPORT_ID
+                    },
+                    sort: { created_at: -1 },
+                    limit: 20
+                }),
+            });
+            const data = await response.json();
+            if (data.data) {
+                setLogs(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch logs', error);
+        }
+    };
+
+    const saveLog = async (conditions: string) => {
+        try {
+            const now = new Date().toISOString();
+            const normalizedEmail = session?.user?.email?.toLowerCase() || 'unknown';
+            await fetch('/api/mongodb/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    collection: 'report_access_logs',
+                    filter: {
+                        shopid: SHOP_ID_PUBLIC,
+                        email: normalizedEmail,
+                        created_at: now,
+                    },
+                    data: {
+                        shopid: SHOP_ID_PUBLIC,
+                        email: normalizedEmail,
+                        report_name: REPORT_ID,
+                        conditions: conditions,
+                        created_at: now,
+                        updated_at: now,
+                    },
+                    upsert: true,
+                }),
+            });
+            fetchLogs(); // Refresh logs
+        } catch (error) {
+            console.error('Failed to save log', error);
+        }
+    };
+
+    // Fetch logs on mount and when session changes
+    useEffect(() => {
+        if (status === 'authenticated' && session) {
+            const isAdmin = session?.user?.isAdmin;
+            const allowedReports = (session?.user as any)?.allowed_reports || [];
+            const hasAccess = isAdmin || allowedReports.includes(REPORT_ID);
+            if (hasAccess) {
+                fetchLogs();
+            }
+        }
+    }, [session, status]);
 
     // Auth check
     if (status === 'loading') {
@@ -98,6 +173,10 @@ export default function ReportSRR40010() {
         setQueryLog(null);
 
         try {
+            // Save log before generating report
+            const conditions = `Date: ${startDate.toLocaleDateString('th-TH')} - ${endDate.toLocaleDateString('th-TH')}`;
+            await saveLog(conditions);
+
             // สร้าง Query โดยใช้ shared query builder
             const query = buildQuery({
                 startDate,
@@ -341,6 +420,46 @@ export default function ReportSRR40010() {
                         />
                     </div>
                 )}
+
+                {/* Logs Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                    <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <h3 className="text-lg font-semibold text-slate-900">ประวัติการเรียกดูรายงาน</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เวลา</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ผู้ใช้งาน</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เงื่อนไข</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-200">
+                                {logs.map((log, index) => (
+                                    <tr key={index}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                            {new Date(log.created_at).toLocaleString('th-TH')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                            {log.email}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                            {log.conditions}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {logs.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} className="px-6 py-4 text-center text-sm text-slate-500">
+                                            ยังไม่มีประวัติการเรียกดู
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     );

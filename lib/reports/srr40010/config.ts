@@ -163,7 +163,7 @@ export const getDefaultQueryConfig = (): QueryConfig => ({
 export const COLUMN_SCHEMA = {
     "doc_date": {
         label: "วันที่",
-        flex: 8,
+        flex: 7,
         align: "L" as const,
         data_type: "date",
         format: "dd/MM/yyyy",
@@ -171,65 +171,81 @@ export const COLUMN_SCHEMA = {
     },
     "doc_no": {
         label: "เลขที่เอกสาร",
-        flex: 10,
+        flex: 9,
         align: "L" as const
     },
     "cust_name": {
-        label: "ลูกค้า",
-        flex: 15,
+        label: "ลูกหนี้",
+        flex: 12,
+        align: "L" as const
+    },
+    "sale_name": {
+        label: "พนักงานขาย",
+        flex: 10,
         align: "L" as const
     },
     "item_code": {
         label: "รหัสสินค้า",
-        flex: 10,
+        flex: 8,
         align: "L" as const
     },
     "item_name": {
-        label: "ชื่อสินค้า",
-        flex: 15,
+        label: "รายการ",
+        flex: 12,
         align: "L" as const
     },
     "qty": {
         label: "จำนวน",
-        flex: 8,
+        flex: 6,
         align: "R" as const,
         data_type: "number",
         format: "#,##0.00"
     },
     "unit_code": {
-        label: "หน่วย",
-        flex: 6,
+        label: "หน่วยนับ",
+        flex: 5,
         align: "C" as const
     },
     "price": {
-        label: "ราคาขาย",
-        flex: 8,
+        label: "ราคา",
+        flex: 7,
         align: "R" as const,
         data_type: "number",
         format: "#,##0.00"
     },
     "price_cust": {
-        label: "ราคามาตรฐาน",
+        label: "ราคาตามลูกค้า",
         flex: 8,
         align: "R" as const,
         data_type: "number",
         format: "#,##0.00"
     },
     "diff": {
-        label: "ส่วนต่าง",
-        flex: 8,
+        label: "ผลต่าง",
+        flex: 7,
         align: "R" as const,
         data_type: "number",
         format: "#,##0.00",
         text_color_negative: "#FF0000"
     },
-    "sum_amount": {
-        label: "มูลค่าส่วนต่าง",
-        flex: 10,
+    "average_cost": {
+        label: "ต้นทุนเฉลี่ย",
+        flex: 8,
         align: "R" as const,
         data_type: "number",
-        format: "#,##0.00",
-        text_color_negative: "#FF0000"
+        format: "#,##0.00"
+    },
+    "sum_amount": {
+        label: "รวมเงิน",
+        flex: 8,
+        align: "R" as const,
+        data_type: "number",
+        format: "#,##0.00"
+    },
+    "remark": {
+        label: "หมายเหตุ",
+        flex: 8,
+        align: "L" as const
     }
 };
 
@@ -284,6 +300,7 @@ export const getDefaultPdfConfig = (thaiStartDate: string, thaiEndDate: string):
                 { field: "doc_date" },
                 { field: "doc_no" },
                 { field: "cust_name" },
+                { field: "sale_name" },
                 { field: "item_code" },
                 { field: "item_name" },
                 { field: "qty" },
@@ -291,7 +308,9 @@ export const getDefaultPdfConfig = (thaiStartDate: string, thaiEndDate: string):
                 { field: "price" },
                 { field: "price_cust" },
                 { field: "diff" },
-                { field: "sum_amount" }
+                { field: "average_cost" },
+                { field: "sum_amount" },
+                { field: "remark" }
             ]
         }],
         column_schema: COLUMN_SCHEMA

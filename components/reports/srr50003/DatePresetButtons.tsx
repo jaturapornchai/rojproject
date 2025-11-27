@@ -1,27 +1,18 @@
 'use client';
 
-// Date Preset Buttons Component สำหรับ SRR40010
+// Date Preset Buttons Component สำหรับ SRR50003
+
+import { DATE_PRESETS } from '@/lib/reports/srr50003/config';
 
 interface DatePresetButtonsProps {
     onPresetSelect: (preset: string) => void;
     activePreset?: string;
 }
 
-const PRESETS = [
-    { value: 'today', label: 'วันนี้' },
-    { value: 'yesterday', label: 'เมื่อวาน' },
-    { value: 'thisWeek', label: 'สัปดาห์นี้' },
-    { value: 'lastWeek', label: 'สัปดาห์ที่แล้ว' },
-    { value: 'thisMonth', label: 'เดือนนี้' },
-    { value: 'lastMonth', label: 'เดือนที่แล้ว' },
-    { value: 'thisYear', label: 'ปีนี้' },
-    { value: 'lastYear', label: 'ปีที่แล้ว' },
-];
-
 export function DatePresetButtons({ onPresetSelect, activePreset }: DatePresetButtonsProps) {
     return (
         <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-100">
-            {PRESETS.map(({ value, label }) => (
+            {DATE_PRESETS.map(({ value, label }) => (
                 <button
                     key={value}
                     type="button"

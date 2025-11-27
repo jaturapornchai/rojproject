@@ -4,187 +4,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
 
-const BASE_QUERY = `SELECT 
-       doc_date,(CASE when (pos_id <> '') THEN 1 ELSE 0 END) as pos_status,(CASE when (pos_id <> '') THEN pos_id ELSE 'ขายหลังร้าน' END) as pos_id,
-       cashier_code,(select name_1 from erp_user where code=cashier_code) as cashier_name,
-       SUM(Totale1) total_cash,
-       sum(Totale9) total_wallet,
-       SUM(Totale2) total_card,
-       SUM(Totale3) total_amount,
-       SUM(Totale4) total_1,
-       SUM(Totale5) total_2,
-       SUM(Totale6) total_3,
-       SUM(Totale7) total_s,
-       SUM(Totale8) total_d
-FROM 
-(
-       select doc_date,pos_id,cashier_code,(select name_1 from erp_user where code=cashier_code) as cashier_name
-       
-       ---เงินสด---
-       ,(CASE when (is_pos = 1) THEN (((select cb_trans.total_net_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-         +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END))
-         -(select cb_trans.card_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-         -(select cb_trans.wallet_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-         ) ELSE 0 END) AS Totale1 --เงินสด
-        ---เงินเชื่อ--- 
-              ,(CASE when (is_pos = 1) THEN (select cb_trans.card_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no) ELSE 0 END) AS Totale2
-        ---wallet---	  
-              ,(CASE when (is_pos = 1) THEN ( (select cb_trans.wallet_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-         +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END)
-         ) ELSE 0 END) AS Totale9 --wallet
-        
-        ---	Total_amount---  
-              ,(CASE when (is_pos = 1) THEN (select cb_trans.total_net_amount from cb_trans where cb_trans.doc_no=ic_trans.doc_no)
-              +(CASE WHEN discount_word <> '' THEN discount_word::numeric ELSE 0 END) ELSE 0 END) AS Totale3 --Total_amount
-              
-              ,(CASE when (is_pos = 0) and (inquiry_type = 1) THEN total_amount ELSE 0 END) AS Totale4
-              ,(CASE when (is_pos = 0) and (inquiry_type = 0) THEN total_amount ELSE 0 END) AS Totale5
-              ,(CASE when (is_pos = 0) THEN total_amount ELSE 0 END) AS Totale6
-              ,(CASE when (is_pos in (0,1)) THEN (total_amount+(CASE when discount_word <> '' THEN discount_word::numeric ELSE 0 END)) ELSE 0 END) AS Totale7,
-          (CASE when discount_word <> '' THEN discount_word::numeric ELSE 0 END) as Totale8
-
-       from  ic_trans where trans_flag = 44 and last_status = 0 and doc_date between '{{start_date}}' and '{{end_date}}'   ) t
-GROUP BY doc_date,pos_id,cashier_code order by doc_date,pos_id,cashier_code`;
-
-console.log('[SRR50003 Schedules] BASE_QUERY:', BASE_QUERY);
-
-const DEFAULT_QUERY_CONFIG = {
-    shopid: SHOP_ID_PUBLIC,
-    query_items: [
-        {
-            alias: "daily_sales_summary",
-            query: BASE_QUERY,
-            summary_config: {
-                levels: [
-                    {
-                        group_by_fields: ["doc_date"],
-                        sum_fields: ["total_cash", "total_wallet", "total_card", "total_amount", "total_1", "total_2", "total_3", "total_s", "total_d"],
-                        typejson: 1
-                    }
-                ],
-                grand_total: true,
-                grand_total_type: 99
-            }
-        }
-    ]
-};
-
-const DEFAULT_PDF_CONFIG = {
-    shopid: SHOP_ID_PUBLIC,
-    pdf_config: {
-        title: "รายงานสรุปยอดขายประจำวัน (SRR50003)",
-        description: "ตั้งแต่วันที่ {{thai_start_date}} ถึงวันที่ {{thai_end_date}}",
-        title_align: "C",
-        description_align: "L",
-        orientation: "L",
-        page_size: "A4"
-    },
-    layout_config: {
-        schema_version: 1,
-        styles: {
-            use_fill: false,
-            header: {
-                background: "#FFFFFF",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            detail: {
-                background: "#FFFFFF",
-                text: "#000000",
-                border: "#E0E0E0"
-            },
-            summary: {
-                background: "#F5F5F5",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            level_1: {
-                background: "#F5F5F5",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            table: {
-                row_spacing: 0,
-                column_spacing: 2,
-                grid_color: "#CCCCCC"
-            }
-        },
-        sections: [
-            {
-                alias: "daily_sales_summary",
-                row_type: "detail",
-                columns: [
-                    { field: "doc_date" },
-                    { field: "pos_id" },
-                    { field: "cashier_name" },
-                    { field: "total_cash" },
-                    { field: "total_wallet" },
-                    { field: "total_card" },
-                    { field: "total_amount" },
-                    { field: "total_1" },
-                    { field: "total_2" },
-                    { field: "total_3" },
-                    { field: "total_s" }
-                ]
-            }
-        ],
-        column_schema: {
-            "doc_date": { label: "เอกสารวันที่", flex: 10, align: "L", data_type: "date", format: "dd/MM/yyyy", use_buddhist_year: true },
-            "pos_id": { label: "ประเภทการขาย", flex: 12, align: "L", hide_when_summary: true },
-            "cashier_name": { label: "พนักงานขาย", flex: 15, align: "L", hide_when_summary: true },
-            "total_cash": { label: "POS ขายเงินสด", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_wallet": { label: "POS ขาย Wallet", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_card": { label: "POS ขายเงินเชื่อ", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_amount": { label: "POS ยอดเงินรวม", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_1": { label: "ขายเงินสด", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_2": { label: "ขายเงินเชื่อ", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_3": { label: "รวมขาย", flex: 12, align: "R", data_type: "number", format: "#,##0.00" },
-            "total_s": { label: "ยอดขายสุทธิ", flex: 12, align: "R", data_type: "number", format: "#,##0.00" }
-        }
-    }
-};
-
-interface EmailSchedule {
-    schedule_id: string;
-    schedule_name: string;
-    enabled: boolean;
-    date_preset: string;
-    days_of_week: number[];
-    times: string[];
-    timezone: string;
-    recipients: string[];
-    cc_recipients: string[];
-    email_subject: string;
-    include_pdf: boolean;
-    query_config?: any;
-    pdf_config?: any;
-    created_at?: string;
-    updated_at?: string;
-}
-
-const DATE_PRESETS = [
-    { value: 'today', label: 'วันนี้' },
-    { value: 'yesterday', label: 'เมื่อวานนี้' },
-    { value: 'this_week', label: 'สัปดาห์นี้' },
-    { value: 'last_week', label: 'สัปดาห์ก่อน' },
-    { value: 'this_month', label: 'เดือนนี้' },
-    { value: 'last_month', label: 'เดือนก่อน' },
-    { value: 'this_year', label: 'ปีนี้' },
-    { value: 'last_year', label: 'ปีก่อน' },
-];
-
-const DAYS_OF_WEEK = [
-    { value: 0, label: 'อาทิตย์' },
-    { value: 1, label: 'จันทร์' },
-    { value: 2, label: 'อังคาร' },
-    { value: 3, label: 'พุธ' },
-    { value: 4, label: 'พฤหัสบดี' },
-    { value: 5, label: 'ศุกร์' },
-    { value: 6, label: 'เสาร์' },
-];
+// Shared modules
+import {
+    REPORT_ID,
+    REPORT_NAME,
+    DATE_PRESETS,
+    DAYS_OF_WEEK,
+    DEFAULT_SUMMARY_CONFIG,
+    buildQuery,
+    buildPdfConfig,
+    calculateDateFromPreset,
+    serializeFilters,
+    deserializeFilters,
+    type ReportFilters,
+    type EmailSchedule
+} from '@/lib/reports/srr50003';
+import { useReportFilters, useMasterData } from '@/hooks/reports/srr50003';
+import { FilterPanel, FilterSummary } from '@/components/reports/srr50003';
 
 export default function ScheduleManagement() {
     const [schedules, setSchedules] = useState<EmailSchedule[]>([]);
@@ -196,23 +32,39 @@ export default function ScheduleManagement() {
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, schedule: EmailSchedule | null }>({ isOpen: false, schedule: null });
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [runningId, setRunningId] = useState<string | null>(null);
+    const [showFilterPanel, setShowFilterPanel] = useState(false);
 
     const shopid = SHOP_ID_PUBLIC;
-    const reportid = 'SRR50003';
 
-    const [formData, setFormData] = useState<Partial<EmailSchedule>>({
+    // ใช้ shared hooks
+    const { employees, branches } = useMasterData();
+    const {
+        filters,
+        setEmployeeFilterType,
+        setSelectedEmployee,
+        setEmployeeRangeStart,
+        setEmployeeRangeEnd,
+        toggleEmployeeSelection,
+        setBranchFilterType,
+        setSelectedBranch,
+        setBranchRangeStart,
+        setBranchRangeEnd,
+        toggleBranchSelection,
+        setFilters,
+        resetAllFilters
+    } = useReportFilters();
+
+    const [formData, setFormData] = useState({
         schedule_name: '',
         enabled: true,
         date_preset: 'today',
         days_of_week: [1, 2, 3, 4, 5],
         times: ['09:00'],
         timezone: 'Asia/Bangkok',
-        recipients: [],
-        cc_recipients: [],
+        recipients: [] as string[],
+        cc_recipients: [] as string[],
         email_subject: 'รายงานสรุปยอดขายประจำวัน',
         include_pdf: true,
-        query_config: DEFAULT_QUERY_CONFIG,
-        pdf_config: DEFAULT_PDF_CONFIG,
     });
 
     useEffect(() => {
@@ -228,7 +80,7 @@ export default function ScheduleManagement() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     collection: 'email_schedules',
-                    filter: { shopid, reportid },
+                    filter: { shopid, reportid: REPORT_ID },
                     sort: { created_at: -1 },
                 }),
             });
@@ -255,15 +107,31 @@ export default function ScheduleManagement() {
             const now = new Date().toISOString();
             const schedule_id = editingId || ('schedule-' + Date.now());
 
+            // สร้าง query config จาก date_preset และ filters
+            const { startDate, endDate } = calculateDateFromPreset(formData.date_preset);
+            const query = buildQuery({ startDate, endDate, filters });
+            const pdfConfig = buildPdfConfig('{{guid}}', startDate, endDate);
+
             const payload = {
                 collection: 'email_schedules',
-                filter: { shopid, reportid, schedule_id },
+                filter: { shopid, reportid: REPORT_ID, schedule_id },
                 data: {
                     shopid,
-                    reportid,
+                    reportid: REPORT_ID,
                     schedule_id,
-                    report_name: 'รายงานสรุปยอดขายประจำวัน',
+                    report_name: REPORT_NAME,
                     ...formData,
+                    filter_config: serializeFilters(filters), // เก็บ filter config
+                    query_config: {
+                        shopid,
+                        limit: 5000,
+                        query_items: [{
+                            alias: "daily_sales_summary",
+                            query: query,
+                            summary_config: DEFAULT_SUMMARY_CONFIG
+                        }]
+                    },
+                    pdf_config: pdfConfig,
                     created_at: editingId ? undefined : now,
                     updated_at: now,
                 },
@@ -284,6 +152,8 @@ export default function ScheduleManagement() {
 
             resetForm();
             fetchSchedules();
+            setSuccessMessage('บันทึกตารางส่งเรียบร้อยแล้ว');
+            setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err: any) {
             setError(err.message);
         }
@@ -319,8 +189,6 @@ export default function ScheduleManagement() {
             }
 
             setSuccessMessage(`สำเร็จ: ${data.message} (GUID: ${data.guid})`);
-
-            // Auto dismiss success message
             setTimeout(() => setSuccessMessage(null), 5000);
 
         } catch (err: any) {
@@ -339,12 +207,18 @@ export default function ScheduleManagement() {
             times: schedule.times,
             timezone: schedule.timezone,
             recipients: schedule.recipients,
-            cc_recipients: schedule.cc_recipients,
+            cc_recipients: schedule.cc_recipients || [],
             email_subject: schedule.email_subject,
             include_pdf: schedule.include_pdf,
-            query_config: schedule.query_config || DEFAULT_QUERY_CONFIG,
-            pdf_config: schedule.pdf_config || DEFAULT_PDF_CONFIG,
         });
+        
+        // Load filter config ถ้ามี
+        if (schedule.filter_config) {
+            setFilters(deserializeFilters(schedule.filter_config));
+        } else {
+            resetAllFilters();
+        }
+        
         setEditingId(schedule.schedule_id);
         setShowForm(true);
     };
@@ -360,7 +234,7 @@ export default function ScheduleManagement() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     collection: 'email_schedules',
-                    filter: { shopid, reportid, schedule_id },
+                    filter: { shopid, reportid: REPORT_ID, schedule_id },
                     delete_many: false,
                 }),
             });
@@ -384,7 +258,7 @@ export default function ScheduleManagement() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     collection: 'email_schedules',
-                    filter: { shopid, reportid, schedule_id: schedule.schedule_id },
+                    filter: { shopid, reportid: REPORT_ID, schedule_id: schedule.schedule_id },
                     data: {
                         enabled: !schedule.enabled,
                         updated_at: new Date().toISOString(),
@@ -414,7 +288,7 @@ export default function ScheduleManagement() {
 
     const resetForm = () => {
         setFormData({
-            schedule_name: generateGuid(),
+            schedule_name: '',
             enabled: true,
             date_preset: 'today',
             days_of_week: [1, 2, 3, 4, 5],
@@ -424,15 +298,15 @@ export default function ScheduleManagement() {
             cc_recipients: [],
             email_subject: 'รายงานสรุปยอดขายประจำวัน',
             include_pdf: true,
-            query_config: DEFAULT_QUERY_CONFIG,
-            pdf_config: DEFAULT_PDF_CONFIG,
         });
+        resetAllFilters();
         setShowForm(false);
         setEditingId(null);
+        setShowFilterPanel(false);
     };
 
     const toggleDayOfWeek = (day: number) => {
-        const days = formData.days_of_week || [];
+        const days = formData.days_of_week;
         if (days.includes(day)) {
             setFormData({ ...formData, days_of_week: days.filter(d => d !== day) });
         } else {
@@ -441,19 +315,17 @@ export default function ScheduleManagement() {
     };
 
     const addTime = () => {
-        const times = formData.times || [];
-        setFormData({ ...formData, times: [...times, '09:00'] });
+        setFormData({ ...formData, times: [...formData.times, '09:00'] });
     };
 
     const updateTime = (index: number, value: string) => {
-        const times = [...(formData.times || [])];
+        const times = [...formData.times];
         times[index] = value;
         setFormData({ ...formData, times });
     };
 
     const removeTime = (index: number) => {
-        const times = formData.times || [];
-        setFormData({ ...formData, times: times.filter((_, i) => i !== index) });
+        setFormData({ ...formData, times: formData.times.filter((_, i) => i !== index) });
     };
 
     return (
@@ -488,7 +360,7 @@ export default function ScheduleManagement() {
                             <h3 className="text-lg font-semibold text-slate-900">ยืนยันการส่งอีเมล</h3>
                         </div>
                         <p className="text-slate-600">
-                            คุณต้องการทดสอบส่งอีเมล "{confirmModal.schedule?.schedule_name}" ทันทีหรือไม่?
+                            คุณต้องการทดสอบส่งอีเมล &quot;{confirmModal.schedule?.schedule_name}&quot; ทันทีหรือไม่?
                         </p>
                         <div className="flex justify-end gap-3 pt-2">
                             <button
@@ -517,17 +389,13 @@ export default function ScheduleManagement() {
                                 <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
                             </svg>
                         </Link>
-                        <h1 className="text-lg font-semibold text-slate-800">ตารางการส่งอีเมล - SRR50003</h1>
+                        <h1 className="text-lg font-semibold text-slate-800">ตารางการส่งอีเมล - {REPORT_ID}</h1>
                     </div>
                     <div className="flex gap-2 items-center">
                         <button
                             onClick={() => setShowJson(!showJson)}
                             className={"px-4 py-2 rounded-lg transition font-medium text-sm shadow-sm " + (showJson ? "bg-slate-200 text-slate-800" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50")}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline mr-1">
-                                <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-                                <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                            </svg>
                             {showJson ? 'ซ่อน JSON' : 'ดู JSON'}
                         </button>
                         <button
@@ -543,17 +411,13 @@ export default function ScheduleManagement() {
                                     cc_recipients: [],
                                     email_subject: 'รายงานสรุปยอดขายประจำวัน',
                                     include_pdf: true,
-                                    query_config: DEFAULT_QUERY_CONFIG,
-                                    pdf_config: DEFAULT_PDF_CONFIG,
                                 });
+                                resetAllFilters();
                                 setShowForm(true);
                             }}
                             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm shadow-sm"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline mr-1">
-                                <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                            </svg>
-                            เพิ่มตารางส่ง
+                            + เพิ่มตารางส่ง
                         </button>
                     </div>
                 </div>
@@ -566,9 +430,7 @@ export default function ScheduleManagement() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-slate-100 font-mono text-sm">Current Schedules Data (JSON)</h3>
                             <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(JSON.stringify(schedules, null, 2));
-                                }}
+                                onClick={() => navigator.clipboard.writeText(JSON.stringify(schedules, null, 2))}
                                 className="text-xs bg-slate-700 text-slate-300 px-3 py-1.5 rounded hover:bg-slate-600 transition"
                             >
                                 Copy JSON
@@ -628,6 +490,49 @@ export default function ScheduleManagement() {
                                 </select>
                             </div>
 
+                            {/* Report Filters Section */}
+                            <div className="border-t border-slate-200 pt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowFilterPanel(!showFilterPanel)}
+                                    className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-transform ${showFilterPanel ? 'rotate-180' : ''}`}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                    🔍 ตัวกรองรายงาน (เงื่อนไขพนักงานขาย/สาขา)
+                                </button>
+                                
+                                {/* Filter Summary */}
+                                <FilterSummary 
+                                    filters={filters} 
+                                    employees={employees} 
+                                    branches={branches}
+                                    className="mt-2"
+                                />
+
+                                {showFilterPanel && (
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                        <FilterPanel
+                                            filters={filters}
+                                            employees={employees}
+                                            branches={branches}
+                                            onEmployeeFilterTypeChange={setEmployeeFilterType}
+                                            onSelectedEmployeeChange={setSelectedEmployee}
+                                            onEmployeeRangeStartChange={setEmployeeRangeStart}
+                                            onEmployeeRangeEndChange={setEmployeeRangeEnd}
+                                            onToggleEmployeeSelection={toggleEmployeeSelection}
+                                            onBranchFilterTypeChange={setBranchFilterType}
+                                            onSelectedBranchChange={setSelectedBranch}
+                                            onBranchRangeStartChange={setBranchRangeStart}
+                                            onBranchRangeEndChange={setBranchRangeEnd}
+                                            onToggleBranchSelection={toggleBranchSelection}
+                                            compact={true}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Days of Week */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -639,10 +544,11 @@ export default function ScheduleManagement() {
                                             key={day.value}
                                             type="button"
                                             onClick={() => toggleDayOfWeek(day.value)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${(formData.days_of_week || []).includes(day.value)
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                                                formData.days_of_week.includes(day.value)
                                                     ? 'bg-emerald-600 text-white'
                                                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                }`}
+                                            }`}
                                         >
                                             {day.label}
                                         </button>
@@ -656,7 +562,7 @@ export default function ScheduleManagement() {
                                     เวลาที่ส่ง
                                 </label>
                                 <div className="space-y-2">
-                                    {(formData.times || []).map((time, index) => (
+                                    {formData.times.map((time, index) => (
                                         <div key={index} className="flex gap-2">
                                             <input
                                                 type="time"
@@ -664,7 +570,7 @@ export default function ScheduleManagement() {
                                                 onChange={(e) => updateTime(index, e.target.value)}
                                                 className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                                             />
-                                            {(formData.times || []).length > 1 && (
+                                            {formData.times.length > 1 && (
                                                 <button
                                                     type="button"
                                                     onClick={() => removeTime(index)}
@@ -692,7 +598,7 @@ export default function ScheduleManagement() {
                                 </label>
                                 <input
                                     type="text"
-                                    value={(formData.recipients || []).join(', ')}
+                                    value={formData.recipients.join(', ')}
                                     onChange={(e) => setFormData({
                                         ...formData,
                                         recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
@@ -710,7 +616,7 @@ export default function ScheduleManagement() {
                                 </label>
                                 <input
                                     type="text"
-                                    value={(formData.cc_recipients || []).join(', ')}
+                                    value={formData.cc_recipients.join(', ')}
                                     onChange={(e) => setFormData({
                                         ...formData,
                                         cc_recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
@@ -802,15 +708,16 @@ export default function ScheduleManagement() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="font-semibold text-slate-900">{schedule.schedule_name}</h3>
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${schedule.enabled
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                    schedule.enabled
                                                         ? 'bg-emerald-100 text-emerald-700'
                                                         : 'bg-slate-100 text-slate-600'
-                                                    }`}>
+                                                }`}>
                                                     {schedule.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                                                 </span>
                                             </div>
                                             <div className="space-y-1 text-sm text-slate-600">
-                                                <p>📅 ช่วงวันที่: {DATE_PRESETS.find(p => p.value === schedule.date_preset)?.label}</p>
+                                                <p>📅 ช่วงวันที่: {DATE_PRESETS.find(p => p.value === schedule.date_preset)?.label || schedule.date_preset}</p>
                                                 <p>📆 วัน: {schedule.days_of_week.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label).join(', ')}</p>
                                                 <p>⏰ เวลา: {schedule.times.join(', ')}</p>
                                                 <p>📧 ผู้รับ: {schedule.recipients.join(', ')}</p>
@@ -818,6 +725,16 @@ export default function ScheduleManagement() {
                                                     <p>📋 CC: {schedule.cc_recipients.join(', ')}</p>
                                                 )}
                                             </div>
+                                            {/* แสดง Filter Summary ถ้ามี */}
+                                            {schedule.filter_config && (
+                                                <div className="mt-2">
+                                                    <FilterSummary 
+                                                        filters={deserializeFilters(schedule.filter_config)} 
+                                                        employees={employees}
+                                                        branches={branches}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex gap-2 ml-4">
                                             <button

@@ -1,0 +1,162 @@
+// Types สำหรับ SRR50003 - รายงานสรุปยอดขายประจำวัน
+
+export interface Employee {
+    code: string;
+    name_1: string;
+    name_2?: string;
+}
+
+export interface Branch {
+    code: string;
+    name_1: string;
+}
+
+// Filter Types
+export type FilterType = 'all' | 'single' | 'range' | 'multiple';
+
+export interface EmployeeFilterState {
+    filterType: FilterType;
+    selectedEmployee: string;
+    rangeStart: string;
+    rangeEnd: string;
+    selectedEmployees: string[];
+}
+
+export interface BranchFilterState {
+    filterType: FilterType;
+    selectedBranch: string;
+    rangeStart: string;
+    rangeEnd: string;
+    selectedBranches: string[];
+}
+
+export interface ReportFilters {
+    employee: EmployeeFilterState;
+    branch: BranchFilterState;
+}
+
+// Date Range
+export interface DateRange {
+    startDate: Date | null;
+    endDate: Date | null;
+}
+
+// Query Config สำหรับส่ง API
+export interface QueryConfig {
+    shopid: string;
+    limit?: number;
+    query_items: QueryItem[];
+}
+
+export interface QueryItem {
+    alias: string;
+    query: string;
+    summary_config?: SummaryConfig;
+}
+
+export interface SummaryConfig {
+    levels: SummaryLevel[];
+    grand_total: boolean;
+    grand_total_type: number;
+}
+
+export interface SummaryLevel {
+    group_by_fields: string[];
+    sum_fields: string[];
+    typejson: number;
+}
+
+// PDF Config
+export interface PdfConfig {
+    shopid: string;
+    guid?: string;
+    pdf_config: {
+        title: string;
+        description: string;
+        orientation: 'L' | 'P';
+        page_size: string;
+        title_align: 'L' | 'C' | 'R';
+        description_align: 'L' | 'C' | 'R';
+    };
+    layout_config: LayoutConfig;
+}
+
+export interface LayoutConfig {
+    schema_version: number;
+    styles: LayoutStyles;
+    sections: LayoutSection[];
+    column_schema: Record<string, ColumnSchema>;
+}
+
+export interface LayoutStyles {
+    use_fill: boolean;
+    header: StyleConfig;
+    detail: StyleConfig;
+    summary: StyleConfig;
+    level_1: StyleConfig;
+    table?: TableStyle;
+}
+
+export interface StyleConfig {
+    background: string;
+    text: string;
+    border: string;
+    font_weight?: string;
+}
+
+export interface TableStyle {
+    row_spacing: number;
+    column_spacing: number;
+    grid_color: string;
+}
+
+export interface LayoutSection {
+    alias: string;
+    row_type: string;
+    columns: { field: string }[];
+}
+
+export interface ColumnSchema {
+    label: string;
+    flex: number;
+    align: 'L' | 'C' | 'R';
+    data_type?: string;
+    format?: string;
+    use_buddhist_year?: boolean;
+    text_color_negative?: string;
+    hide_when_summary?: boolean;
+}
+
+// Email Schedule
+export interface EmailSchedule {
+    schedule_id: string;
+    schedule_name: string;
+    shopid: string;
+    reportid: string;
+    report_name: string;
+    enabled: boolean;
+    date_preset: string;
+    days_of_week: number[];
+    times: string[];
+    timezone: string;
+    recipients: string[];
+    cc_recipients: string[];
+    email_subject: string;
+    include_pdf: boolean;
+    query_config?: QueryConfig;
+    pdf_config?: PdfConfig;
+    filter_config?: ReportFilters;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// Date Presets
+export interface DatePreset {
+    value: string;
+    label: string;
+}
+
+export interface DayOfWeek {
+    value: number;
+    label: string;
+}
