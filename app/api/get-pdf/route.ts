@@ -18,6 +18,8 @@ export async function POST(request: Request) {
             );
         }
 
+        console.log('[get-pdf] Request body:', JSON.stringify(body, null, 2));
+
         const response = await fetch(`${API_BASE_URL}/resulttopdf`, {
             method: 'POST',
             headers: {
@@ -27,14 +29,19 @@ export async function POST(request: Request) {
             cache: 'no-store',
         });
 
+        console.log('[get-pdf] Response status:', response.status, response.statusText);
+
         if (!response.ok) {
             const errorText = await response.text();
+            console.log('[get-pdf] Error response text:', errorText);
             let parsedError: unknown = null;
             try {
                 parsedError = JSON.parse(errorText);
             } catch {
                 parsedError = errorText;
             }
+
+            console.log('[get-pdf] Parsed error:', parsedError);
 
             return NextResponse.json(
                 {

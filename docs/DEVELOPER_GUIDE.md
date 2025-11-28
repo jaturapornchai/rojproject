@@ -2,13 +2,14 @@
 
 ## 📋 สารบัญ
 - [โครงสร้างโปรเจ็กต์](#โครงสร้างโปรเจ็กต์)
-- [การเพิ่มรายงานใหม่ (5 Phases)](#การเพิ่มรายงานใหม่-5-phases)
+- [การเพิ่มรายงานใหม่ (6 Phases)](#การเพิ่มรายงานใหม่-6-phases)
   - [Phase 1: Shared Module](#phase-1-shared-module-librportsreportid)
   - [Phase 2: Custom Hooks](#phase-2-custom-hooks-hooksreportsreportid)
   - [Phase 3: Shared Components](#phase-3-shared-components-componentsreportsreportid)
   - [Phase 4: Main Report Page](#phase-4-main-report-page)
   - [Phase 4.1: ฟีเจอร์ประวัติการเรียกดูรายงาน](#phase-41-ฟีเจอร์ประวัติการเรียกดูรายงาน-report-access-logs)
   - [Phase 5: Schedule Management Page](#phase-5-schedule-management-page)
+  - [Phase 6: เพิ่มในเมนูหน้าแรก](#phase-6-เพิ่มในเมนูหน้าแรก)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
 - [PDF Configuration](#pdf-configuration)
@@ -57,7 +58,7 @@ lib/
         └── index.ts                # Re-export all modules
 ```
 
-## ➕ การเพิ่มรายงานใหม่ (5 Phases)
+## ➕ การเพิ่มรายงานใหม่ (6 Phases)
 
 การเพิ่มรายงานใหม่ใช้หลักการ **Shared Modules** เพื่อให้ code สามารถ reuse ได้ระหว่างหน้ารายงานหลัก (`page.tsx`) และหน้าตั้งเวลาส่งอีเมล (`schedules/page.tsx`)
 
@@ -1268,9 +1269,115 @@ export default function ScheduleManagement() {
 
 ---
 
+### Phase 6: เพิ่มในเมนูหน้าแรก
+
+เพิ่มรายงานใหม่เข้าไปในหน้าแรก (`app/page.tsx`) เพื่อให้ผู้ใช้เข้าถึงได้:
+
+```typescript
+// app/page.tsx
+
+'use client';
+
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+
+export default function Home() {
+  const { data: session } = useSession();
+  const isAdmin = Boolean(session?.user?.isAdmin);
+  const allowedReports = (session?.user as any)?.allowed_reports || [];
+
+  const canAccessReport = (reportId: string) => {
+    if (isAdmin) return true;
+    return allowedReports.includes(reportId);
+  };
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        {/* Hero Section */}
+        <header className="text-center mb-20">
+          <h1 className="text-4xl font-extrabold">
+            ศูนย์รวมข้อมูล<span className="text-blue-600">ธุรกิจอัจฉริยะ</span>
+          </h1>
+        </header>
+
+        {/* Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* เพิ่มรายงานใหม่ที่นี่ */}
+          {canAccessReport('SRRXXXXX') && (
+            <Link
+              href="/reports/srrXXXXX"
+              className="group relative bg-white rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-200"
+            >
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                      {/* เลือก icon ที่เหมาะสม */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+                    </svg>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                    พร้อมใช้งาน
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                  ชื่อรายงาน
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  คำอธิบายรายงาน SRRXXXXX
+                </p>
+
+                <div className="flex items-center text-blue-600 font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                  ดูรายงาน
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 ml-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* ... รายงานอื่นๆ */}
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+**สิ่งที่ต้องปรับแต่ง:**
+1. เปลี่ยน `SRRXXXXX` เป็นรหัสรายงานจริง
+2. เปลี่ยน `href="/reports/srrXXXXX"` เป็น path รายงานจริง
+3. เลือก icon และสีที่เหมาะสม (blue, indigo, rose, red, emerald, amber, purple)
+4. ใส่ชื่อและคำอธิบายรายงาน
+5. ใส่ตำแหน่งที่เหมาะสมในเมนู (ก่อนหรือหลังรายงานอื่น)
+
+**ตัวอย่างสีและ icon:**
+- สีน้ำเงิน (blue): รายงานวิเคราะห์ทั่วไป
+- สีม่วง (indigo): รายงานการเงิน
+- สีชมพู (rose): รายงานราคา/ส่วนต่าง
+- สีแดง (red): รายงานยกเลิก/ปัญหา
+- สีเขียว (emerald): รายงานการจัดการ
+- สีเหลือง (amber): รายงานคู่มือ
+- สีม่วงเข้ม (purple): รายงานผู้ดูแลระบบ
+
+---
+
 ## 🎯 สรุป Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                       Home Page (Phase 6)                        │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  app/page.tsx - เมนูหน้าแรก                              │   │
+│  │  แสดงการ์ดรายงานทั้งหมดพร้อม Permission Check           │   │
+│  └────────────────────────┬─────────────────────────────────┘   │
+└───────────────────────────┼─────────────────────────────────────┘
+                            │
+                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Pages (Phase 4 & 5)                     │
 │  ┌─────────────────────┐    ┌─────────────────────────────┐    │
@@ -1304,6 +1411,12 @@ export default function ScheduleManagement() {
 │  └────────────┘ └────────────┘ └────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Flow การทำงาน:**
+1. Phase 6: ผู้ใช้เข้าหน้าแรกและเห็นรายงานที่มีสิทธิ์เข้าถึง
+2. Phase 4: คลิกเข้ารายงาน → ใช้ shared components + hooks + lib
+3. Phase 5: ตั้งค่าส่งอีเมลอัตโนมัติ → ใช้ shared modules เดียวกัน
+4. ระบบดึง Query และ Filter config เดียวกันจาก Phase 1
 
 ## 🔌 API Endpoints
 

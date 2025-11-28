@@ -189,3 +189,58 @@ where case when 0 = 0 then (price-coalesce(case when price_cust <> 0 then price_
 (ตอบเป็นภาษาไทย)
 
 # ----------------------------------------รายงานใหม่---------------------------------------------------
+
+สร้างรายงานใหม่ โดย ไปอ่าน guide จาก ไฟล์ DEVELOPER_GUIDE.md โดยทำทีละ phase
+
+ชื่อรายงาน : รายงานยกเลิกขายสินค้าและบริการ แยกสาขา
+รหัสรายงาน : B4029
+QUERY
+```
+select branch_code,(select name_1 from erp_branch_list where code = branch_code) as "sync_branch_list.branch_name",doc_date ,doc_no ,doc_ref_date ,doc_ref ,cust_code ,cust_name 
+ from (select branch_code,(select name_1 from erp_branch_list where code = branch_code) as "sync_branch_list.branch_name"
+	   ,cust_code,(select name_1 from ar_customer where ic_trans.cust_code=ar_customer.code) as cust_name
+	   ,total_value,total_discount,total_value - total_discount as total_after_discount,total_vat_value,total_except_vat
+	   ,doc_date,doc_no,doc_time,cashier_code,doc_ref_date,doc_ref,total_amount,total_before_vat,vat_type,vat_rate,last_status as _def_last_status
+	   ,cast(last_status as varchar)||','||cast(used_status as varchar)||','||cast(doc_success as varchar)||','||cast(not_approve_1 as varchar)||','||cast(on_hold as varchar)||','||cast(approve_status as varchar)||','||cast(expire_status  as varchar) as last_status 
+	   from ic_trans 
+	   where trans_flag in(45)  and doc_date between '2025-11-01' and '2025-11-27' 
+   and last_status=0) as temp1 order by branch_code,doc_date,doc_no
+```
+ให้เพิ่มเงือนไขในการเรียกรายงานคือ
+1.ช่วงวันที่
+2.ลูกค้า (เหมือนรายงาน SRR40010)
+3.สาขา
+
+(ตอบเป็นภาษาไทย)
+
+# ----------------------------------------รายงานใหม่---------------------------------------------------
+
+สร้างรายงานใหม่ โดย ไปอ่าน guide จาก ไฟล์ DEVELOPER_GUIDE.md โดยทำทีละ phase
+
+ชื่อรายงาน : รายงานสินค้าใหม่ แสดงระดับราคา
+รหัสรายงาน : SRR20011
+QUERY : 
+```
+select code,name_1,(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code) as unit_standard,
+(select ic_group.name_1 from ic_group where ic_group.code=(select ic_inventory.group_main from ic_inventory where ic_inventory.code=master_logs.code)) as item_group,
+(select price_0 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p1,
+(select price_1 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p2,
+(select price_2 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p3,
+(select price_3 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p4,
+(select price_4 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p5,
+(select price_5 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p6,
+(select price_6 from ic_inventory_price_formula where ic_code=code and ic_inventory_price_formula.unit_code=(select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code)) as p7,
+concat(user_code,' ~ ',(select name_1 from erp_user where code=user_code)) as user_text,
+date_time,computer_name ,DATE(create_date_time_now) as create_date
+from master_logs
+where function_code in (1) and (select ic_inventory.unit_standard from ic_inventory where ic_inventory.code=master_logs.code) <> '' and DATE(date_time) between DATE('2025-01-01') and DATE('2025-11-28') 
+```
+ให้เพิ่มเงือนไขในการเรียกรายงานคือ
+1.ช่วงวันที่
+2.สินค้า ( Query : select code,name_1,unit_cost from ic_inventory order by code)
+3.กลุ่มสินค้า ( Query : select code,name_1 from ic_group order by code )
+4.ยี่ห้อสินค้า ( Query : select code,name_1 from ic_brand order by code )
+
+(ตอบเป็นภาษาไทย)
+
+# ----------------------------------------รายงานใหม่---------------------------------------------------
