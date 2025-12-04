@@ -18,8 +18,6 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log('[get-pdf] Request body:', JSON.stringify(body, null, 2));
-
         const response = await fetch(`${API_BASE_URL}/resulttopdf`, {
             method: 'POST',
             headers: {

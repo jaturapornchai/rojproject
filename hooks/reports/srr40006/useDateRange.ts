@@ -21,12 +21,13 @@ export const useDateRange = (options: UseDateRangeOptions = {}) => {
         setEndDate(end);
     }, []);
 
-    const handleMonthSelect = useCallback((month: number, year: number) => {
-        const start = new Date(year, month, 1);
-        const end = new Date(year, month + 1, 0);
+    const handleMonthSelect = useCallback((month: number) => {
+        const targetYear = startDate?.getFullYear() ?? new Date().getFullYear();
+        const start = new Date(targetYear, month, 1);
+        const end = new Date(targetYear, month + 1, 0);
         setStartDate(start);
         setEndDate(end);
-    }, []);
+    }, [startDate]);
 
     const handleYearSelect = useCallback((year: number) => {
         const start = new Date(year, 0, 1);

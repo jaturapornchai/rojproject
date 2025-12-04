@@ -1,8 +1,12 @@
-// components/reports/srr40006/MonthYearSelector.tsx
-
 'use client';
 
-import { THAI_MONTHS } from '@/lib/reports/srr40006';
+// Month/Year Selector Component สำหรับ SRR20016
+
+const THAI_MONTHS = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+    'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+    'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
 
 interface MonthYearSelectorProps {
     onMonthSelect: (monthIndex: number) => void;
@@ -29,7 +33,7 @@ export function MonthYearSelector({
                             key={month}
                             type="button"
                             onClick={() => onMonthSelect(index)}
-                            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-900 hover:bg-blue-50 hover:text-slate-900 hover:border-blue-200 transition-all"
+                            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-slate-900 hover:border-rose-200 transition-all"
                         >
                             {month}
                         </button>
@@ -44,7 +48,7 @@ export function MonthYearSelector({
                             key={year}
                             type="button"
                             onClick={() => onYearSelect(year)}
-                            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-900 hover:bg-blue-50 hover:text-slate-900 hover:border-blue-200 transition-all"
+                            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-slate-900 hover:border-rose-200 transition-all"
                         >
                             {year + 543}
                         </button>
