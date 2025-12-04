@@ -10,6 +10,8 @@
   - [Phase 4.1: ฟีเจอร์ประวัติการเรียกดูรายงาน](#phase-41-ฟีเจอร์ประวัติการเรียกดูรายงาน-report-access-logs)
   - [Phase 5: Schedule Management Page](#phase-5-schedule-management-page)
   - [Phase 6: เพิ่มในเมนูหน้าแรก](#phase-6-เพิ่มในเมนูหน้าแรก)
+- [รูปแบบ Date Preset Buttons (B4029 Style)](#รูปแบบ-date-preset-buttons-b4029-style)
+- [รูปแบบ Filter Panel พร้อม Infinite Scroll](#รูปแบบ-filter-panel-พร้อม-infinite-scroll)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
 - [PDF Configuration](#pdf-configuration)
@@ -1366,6 +1368,651 @@ export default function Home() {
 
 ---
 
+## 📅 รูปแบบ Date Preset Buttons (B4029 Style)
+
+รูปแบบการเลือกช่วงวันที่แบบ B4029 ประกอบด้วย:
+1. **Date Preset Buttons** - ปุ่มเลือกช่วงวันที่ด่วน
+2. **Month/Year Selector** - เลือกเดือน/ปี
+3. **Thai Date Picker** - ปฏิทินแบบไทย
+
+### รูปแบบ DatePresetButtons.tsx (B4029 Style)
+
+```typescript
+// components/reports/srrXXXXX/DatePresetButtons.tsx
+
+'use client';
+
+interface DatePresetButtonsProps {
+    onPresetSelect: (preset: string) => void;
+}
+
+export function DatePresetButtons({ onPresetSelect }: DatePresetButtonsProps) {
+    const presets = [
+        { value: 'today', label: 'วันนี้' },
+        { value: 'yesterday', label: 'เมื่อวาน' },
+        { value: 'this_week', label: 'สัปดาห์นี้' },
+        { value: 'last_week', label: 'สัปดาห์ที่แล้ว' },
+        { value: 'this_month', label: 'เดือนนี้' },
+        { value: 'last_month', label: 'เดือนที่แล้ว' },
+        { value: 'this_year', label: 'ปีนี้' },
+        { value: 'last_year', label: 'ปีที่แล้ว' },
+    ];
+
+    return (
+        <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">เลือกช่วงเวลาด่วน</label>
+            <div className="flex flex-wrap gap-2">
+                {presets.map(preset => (
+                    <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => onPresetSelect(preset.value)}
+                        className="px-3 py-1.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                    >
+                        {preset.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+```
+
+### รูปแบบ MonthYearSelector.tsx (B4029 Style)
+
+```typescript
+// components/reports/srrXXXXX/MonthYearSelector.tsx
+
+'use client';
+
+import { useState } from 'react';
+
+const THAI_MONTHS = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+    'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+    'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
+
+interface MonthYearSelectorProps {
+    onMonthSelect: (month: number, year: number) => void;
+}
+
+export function MonthYearSelector({ onMonthSelect }: MonthYearSelectorProps) {
+    const currentYear = new Date().getFullYear();
+    const [selectedYear, setSelectedYear] = useState(currentYear);
+
+    // สร้าง array ปี ย้อนหลัง 5 ปี
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+    return (
+        <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">เลือกเดือน/ปี</label>
+            
+            {/* Year Selection */}
+            <div className="flex flex-wrap gap-2 mb-2">
+                {years.map(year => (
+                    <button
+                        key={year}
+                        type="button"
+                        onClick={() => setSelectedYear(year)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                            selectedYear === year
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700'
+                        }`}
+                    >
+                        {year + 543}
+                    </button>
+                ))}
+            </div>
+
+            {/* Month Selection */}
+            <div className="grid grid-cols-4 gap-2">
+                {THAI_MONTHS.map((month, index) => (
+                    <button
+                        key={index}
+                        type="button"
+                        onClick={() => onMonthSelect(index, selectedYear)}
+                        className="px-3 py-2 text-sm font-medium bg-slate-100 text-slate-700 rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
+                    >
+                        {month}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+```
+
+### การใช้งานใน Page
+
+```typescript
+// app/reports/srrXXXXX/page.tsx
+
+import { DatePresetButtons, MonthYearSelector } from '@/components/reports/srrXXXXX';
+import { calculateDateFromPreset } from '@/lib/reports/srrXXXXX';
+
+// ใน component
+const handlePreset = (preset: string) => {
+    const { startDate, endDate } = calculateDateFromPreset(preset);
+    setStartDate(startDate);
+    setEndDate(endDate);
+};
+
+const handleMonthSelect = (month: number, year: number) => {
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+    setStartDate(start);
+    setEndDate(end);
+};
+
+// JSX
+<DatePresetButtons onPresetSelect={handlePreset} />
+<MonthYearSelector onMonthSelect={handleMonthSelect} />
+```
+
+---
+
+## 🔄 รูปแบบ Filter Panel พร้อม Infinite Scroll
+
+สำหรับรายงานที่มี master data จำนวนมาก (เช่น สินค้า 10,000+ รายการ) ควรใช้ **Infinite Scroll** เพื่อประสิทธิภาพ
+
+### หลักการทำงาน:
+1. **Initial Load** - โหลดครั้งแรก 100 รายการ
+2. **Scroll Load** - เมื่อ scroll ลงถึงด้านล่าง โหลดเพิ่มอีก 100 รายการ
+3. **Search Reset** - เมื่อค้นหา จะ reset และโหลดใหม่ตาม keyword
+4. **Debounce** - ใช้ debounce 300ms สำหรับการค้นหา
+
+### รูปแบบ useMasterData.ts (Infinite Scroll)
+
+```typescript
+// hooks/reports/srrXXXXX/useMasterData.ts
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { SHOP_ID_PUBLIC } from '@/lib/constants';
+import type { Product, ProductGroup, ProductBrand } from '@/lib/reports/srrXXXXX';
+import { MASTER_DATA_QUERIES } from '@/lib/reports/srrXXXXX';
+
+const PAGE_SIZE = 100;
+
+export const useMasterData = () => {
+    // Products state
+    const [products, setProducts] = useState<Product[]>([]);
+    const [productsLoading, setProductsLoading] = useState(false);
+    const [productsHasMore, setProductsHasMore] = useState(true);
+    const productsOffsetRef = useRef(0);
+    const productsSearchRef = useRef('');
+
+    // ProductGroups state
+    const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
+    const [productGroupsLoading, setProductGroupsLoading] = useState(false);
+    const [productGroupsHasMore, setProductGroupsHasMore] = useState(true);
+    const productGroupsOffsetRef = useRef(0);
+    const productGroupsSearchRef = useRef('');
+
+    // ProductBrands state
+    const [productBrands, setProductBrands] = useState<ProductBrand[]>([]);
+    const [productBrandsLoading, setProductBrandsLoading] = useState(false);
+    const [productBrandsHasMore, setProductBrandsHasMore] = useState(true);
+    const productBrandsOffsetRef = useRef(0);
+    const productBrandsSearchRef = useRef('');
+
+    // Generic fetch function
+    const fetchData = async <T>(
+        query: string,
+        search: string,
+        offset: number,
+        setData: React.Dispatch<React.SetStateAction<T[]>>,
+        setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+        setHasMore: React.Dispatch<React.SetStateAction<boolean>>,
+        append: boolean
+    ) => {
+        setLoading(true);
+        try {
+            // Build query with search and pagination
+            let finalQuery = query;
+            if (search) {
+                // Add WHERE clause for search
+                const whereClause = `WHERE code LIKE '%${search}%' OR name_1 LIKE '%${search}%'`;
+                finalQuery = query.replace('ORDER BY', `${whereClause} ORDER BY`);
+            }
+            finalQuery += ` LIMIT ${PAGE_SIZE} OFFSET ${offset}`;
+
+            const response = await fetch('/api/generate-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shopid: SHOP_ID_PUBLIC,
+                    limit: PAGE_SIZE,
+                    query_items: [{ alias: 'data', query: finalQuery }]
+                })
+            });
+
+            const result = await response.json();
+            const items = result.data?.data?.detail || [];
+
+            if (append) {
+                setData(prev => [...prev, ...items]);
+            } else {
+                setData(items);
+            }
+
+            setHasMore(items.length === PAGE_SIZE);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Products functions
+    const fetchProducts = useCallback(async (search: string = '', offset: number = 0, append: boolean = false) => {
+        await fetchData(
+            MASTER_DATA_QUERIES.products,
+            search,
+            offset,
+            setProducts,
+            setProductsLoading,
+            setProductsHasMore,
+            append
+        );
+    }, []);
+
+    const loadMoreProducts = useCallback(() => {
+        if (productsLoading || !productsHasMore) return;
+        productsOffsetRef.current += PAGE_SIZE;
+        fetchProducts(productsSearchRef.current, productsOffsetRef.current, true);
+    }, [productsLoading, productsHasMore, fetchProducts]);
+
+    const searchProducts = useCallback((search: string) => {
+        productsSearchRef.current = search;
+        productsOffsetRef.current = 0;
+        fetchProducts(search, 0, false);
+    }, [fetchProducts]);
+
+    // ProductGroups functions (similar pattern)
+    const fetchProductGroups = useCallback(async (search: string = '', offset: number = 0, append: boolean = false) => {
+        await fetchData(
+            MASTER_DATA_QUERIES.productGroups,
+            search,
+            offset,
+            setProductGroups,
+            setProductGroupsLoading,
+            setProductGroupsHasMore,
+            append
+        );
+    }, []);
+
+    const loadMoreProductGroups = useCallback(() => {
+        if (productGroupsLoading || !productGroupsHasMore) return;
+        productGroupsOffsetRef.current += PAGE_SIZE;
+        fetchProductGroups(productGroupsSearchRef.current, productGroupsOffsetRef.current, true);
+    }, [productGroupsLoading, productGroupsHasMore, fetchProductGroups]);
+
+    const searchProductGroups = useCallback((search: string) => {
+        productGroupsSearchRef.current = search;
+        productGroupsOffsetRef.current = 0;
+        fetchProductGroups(search, 0, false);
+    }, [fetchProductGroups]);
+
+    // ProductBrands functions (similar pattern)
+    const fetchProductBrands = useCallback(async (search: string = '', offset: number = 0, append: boolean = false) => {
+        await fetchData(
+            MASTER_DATA_QUERIES.productBrands,
+            search,
+            offset,
+            setProductBrands,
+            setProductBrandsLoading,
+            setProductBrandsHasMore,
+            append
+        );
+    }, []);
+
+    const loadMoreProductBrands = useCallback(() => {
+        if (productBrandsLoading || !productBrandsHasMore) return;
+        productBrandsOffsetRef.current += PAGE_SIZE;
+        fetchProductBrands(productBrandsSearchRef.current, productBrandsOffsetRef.current, true);
+    }, [productBrandsLoading, productBrandsHasMore, fetchProductBrands]);
+
+    const searchProductBrands = useCallback((search: string) => {
+        productBrandsSearchRef.current = search;
+        productBrandsOffsetRef.current = 0;
+        fetchProductBrands(search, 0, false);
+    }, [fetchProductBrands]);
+
+    // Initial load
+    useEffect(() => {
+        fetchProducts();
+        fetchProductGroups();
+        fetchProductBrands();
+    }, [fetchProducts, fetchProductGroups, fetchProductBrands]);
+
+    return {
+        // Products
+        products,
+        productsLoading,
+        productsHasMore,
+        loadMoreProducts,
+        searchProducts,
+        
+        // ProductGroups
+        productGroups,
+        productGroupsLoading,
+        productGroupsHasMore,
+        loadMoreProductGroups,
+        searchProductGroups,
+        
+        // ProductBrands
+        productBrands,
+        productBrandsLoading,
+        productBrandsHasMore,
+        loadMoreProductBrands,
+        searchProductBrands,
+    };
+};
+```
+
+### รูปแบบ FilterPanel.tsx (Infinite Scroll + Collapsible)
+
+```typescript
+// components/reports/srrXXXXX/FilterPanel.tsx
+
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { ReportFilters, Product, ProductGroup, ProductBrand, FilterType } from '@/lib/reports/srrXXXXX';
+
+interface FilterPanelProps {
+    filters: ReportFilters;
+    products: Product[];
+    productGroups: ProductGroup[];
+    productBrands: ProductBrand[];
+    
+    // Loading & HasMore states
+    productsLoading?: boolean;
+    productGroupsLoading?: boolean;
+    productBrandsLoading?: boolean;
+    productsHasMore?: boolean;
+    productGroupsHasMore?: boolean;
+    productBrandsHasMore?: boolean;
+    
+    // Search callbacks
+    onProductSearch?: (searchTerm: string) => void;
+    onProductGroupSearch?: (searchTerm: string) => void;
+    onProductBrandSearch?: (searchTerm: string) => void;
+    
+    // Load More callbacks
+    onLoadMoreProducts?: () => void;
+    onLoadMoreProductGroups?: () => void;
+    onLoadMoreProductBrands?: () => void;
+    
+    // Filter callbacks...
+    onProductFilterTypeChange: (type: FilterType) => void;
+    onToggleProductSelection: (code: string) => void;
+    // ... more callbacks
+}
+
+// Loading indicator component
+const LoadingIndicator = () => (
+    <div className="flex justify-center py-2">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+    </div>
+);
+
+export function FilterPanel({
+    filters,
+    products,
+    productGroups,
+    productBrands,
+    productsLoading = false,
+    productGroupsLoading = false,
+    productBrandsLoading = false,
+    productsHasMore = false,
+    productGroupsHasMore = false,
+    productBrandsHasMore = false,
+    onProductSearch,
+    onProductGroupSearch,
+    onProductBrandSearch,
+    onLoadMoreProducts,
+    onLoadMoreProductGroups,
+    onLoadMoreProductBrands,
+    ...filterActions
+}: FilterPanelProps) {
+    // Collapsible states
+    const [showProductFilter, setShowProductFilter] = useState(false);
+    const [showProductGroupFilter, setShowProductGroupFilter] = useState(false);
+    const [showProductBrandFilter, setShowProductBrandFilter] = useState(false);
+
+    // Search states with debounce
+    const [productSearchTerm, setProductSearchTerm] = useState('');
+    const [productGroupSearchTerm, setProductGroupSearchTerm] = useState('');
+    const [productBrandSearchTerm, setProductBrandSearchTerm] = useState('');
+
+    // Refs for scroll detection
+    const productListRef = useRef<HTMLDivElement>(null);
+    const productGroupListRef = useRef<HTMLDivElement>(null);
+    const productBrandListRef = useRef<HTMLDivElement>(null);
+
+    // Debounced search effect for products
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onProductSearch?.(productSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productSearchTerm, onProductSearch]);
+
+    // Debounced search effect for product groups
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onProductGroupSearch?.(productGroupSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productGroupSearchTerm, onProductGroupSearch]);
+
+    // Debounced search effect for product brands
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onProductBrandSearch?.(productBrandSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productBrandSearchTerm, onProductBrandSearch]);
+
+    // Scroll handler for infinite scroll
+    const handleProductScroll = useCallback(() => {
+        const el = productListRef.current;
+        if (!el) return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = el;
+        // Load more when scrolled to bottom (within 20px)
+        if (scrollHeight - scrollTop - clientHeight < 20) {
+            onLoadMoreProducts?.();
+        }
+    }, [onLoadMoreProducts]);
+
+    // Similar handlers for productGroups and productBrands...
+
+    return (
+        <div className="space-y-4">
+            {/* Product Filter Section - Collapsible */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => setShowProductFilter(!showProductFilter)}
+                    className="w-full px-4 py-3 bg-slate-50 flex items-center justify-between hover:bg-slate-100 transition-colors"
+                >
+                    <span className="font-medium text-slate-700">🏷️ กรองสินค้า</span>
+                    <svg
+                        className={`w-5 h-5 text-slate-500 transition-transform ${showProductFilter ? 'rotate-180' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                
+                {showProductFilter && (
+                    <div className="p-4 space-y-3">
+                        {/* Filter Type Buttons */}
+                        <div className="flex flex-wrap gap-2">
+                            {(['all', 'single', 'range', 'multiple'] as FilterType[]).map(type => (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => filterActions.onProductFilterTypeChange(type)}
+                                    className={`px-3 py-1.5 text-sm rounded-lg transition ${
+                                        filters.product.filterType === type
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {type === 'all' ? 'ทั้งหมด' : 
+                                     type === 'single' ? 'เลือกเดี่ยว' : 
+                                     type === 'range' ? 'ช่วง' : 'เลือกหลายรายการ'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Multiple Selection with Search & Infinite Scroll */}
+                        {filters.product.filterType === 'multiple' && (
+                            <div className="space-y-2">
+                                {/* Search Input */}
+                                <input
+                                    type="text"
+                                    value={productSearchTerm}
+                                    onChange={(e) => setProductSearchTerm(e.target.value)}
+                                    placeholder="🔍 ค้นหารหัสหรือชื่อสินค้า..."
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+
+                                {/* Selected Items */}
+                                {filters.product.selectedProducts.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 p-2 bg-blue-50 rounded-lg">
+                                        <span className="text-xs text-blue-600 mr-1">เลือกแล้ว:</span>
+                                        {filters.product.selectedProducts.map(code => (
+                                            <span
+                                                key={code}
+                                                onClick={() => filterActions.onToggleProductSelection(code)}
+                                                className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-red-100 hover:text-red-800"
+                                            >
+                                                {code} ×
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Scrollable List with Infinite Scroll */}
+                                <div
+                                    ref={productListRef}
+                                    onScroll={handleProductScroll}
+                                    className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg"
+                                >
+                                    {products.map((p) => (
+                                        <label
+                                            key={p.code}
+                                            className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={filters.product.selectedProducts.includes(p.code)}
+                                                onChange={() => filterActions.onToggleProductSelection(p.code)}
+                                                className="mr-2 rounded text-blue-600"
+                                            />
+                                            <span className="text-sm text-slate-900">
+                                                {p.code} - {p.name_1}
+                                            </span>
+                                        </label>
+                                    ))}
+
+                                    {/* Loading Indicator */}
+                                    {productsLoading && <LoadingIndicator />}
+
+                                    {/* Load More Hint */}
+                                    {!productsLoading && productsHasMore && products.length > 0 && (
+                                        <div className="text-center py-2 text-xs text-slate-400">
+                                            เลื่อนลงเพื่อโหลดเพิ่ม
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* ProductGroup Filter Section - Similar structure */}
+            {/* ProductBrand Filter Section - Similar structure */}
+        </div>
+    );
+}
+```
+
+### การใช้งานใน Page
+
+```typescript
+// app/reports/srrXXXXX/page.tsx
+
+import { FilterPanel } from '@/components/reports/srrXXXXX';
+import { useMasterData, useReportFilters } from '@/hooks/reports/srrXXXXX';
+
+export default function ReportPage() {
+    const {
+        products,
+        productsLoading,
+        productsHasMore,
+        loadMoreProducts,
+        searchProducts,
+        productGroups,
+        productGroupsLoading,
+        productGroupsHasMore,
+        loadMoreProductGroups,
+        searchProductGroups,
+        productBrands,
+        productBrandsLoading,
+        productBrandsHasMore,
+        loadMoreProductBrands,
+        searchProductBrands,
+    } = useMasterData();
+
+    const { filters, ...filterActions } = useReportFilters();
+
+    return (
+        <FilterPanel
+            filters={filters}
+            products={products}
+            productGroups={productGroups}
+            productBrands={productBrands}
+            productsLoading={productsLoading}
+            productGroupsLoading={productGroupsLoading}
+            productBrandsLoading={productBrandsLoading}
+            productsHasMore={productsHasMore}
+            productGroupsHasMore={productGroupsHasMore}
+            productBrandsHasMore={productBrandsHasMore}
+            onProductSearch={searchProducts}
+            onProductGroupSearch={searchProductGroups}
+            onProductBrandSearch={searchProductBrands}
+            onLoadMoreProducts={loadMoreProducts}
+            onLoadMoreProductGroups={loadMoreProductGroups}
+            onLoadMoreProductBrands={loadMoreProductBrands}
+            {...filterActions}
+        />
+    );
+}
+```
+
+### สรุป Infinite Scroll Checklist
+
+- [ ] เพิ่ม `PAGE_SIZE = 100` constant
+- [ ] สร้าง state สำหรับ `loading`, `hasMore`, `offset`
+- [ ] ใช้ `useRef` สำหรับ offset และ search term
+- [ ] สร้าง `fetchData` function พร้อม `LIMIT` และ `OFFSET`
+- [ ] สร้าง `loadMore` function ที่เพิ่ม offset แล้ว fetch ต่อ
+- [ ] สร้าง `search` function ที่ reset offset แล้ว fetch ใหม่
+- [ ] ใช้ `debounce 300ms` สำหรับ search input
+- [ ] ใช้ `onScroll` handler ที่ตรวจจับเมื่อถึงด้านล่าง
+- [ ] แสดง Loading indicator ขณะโหลด
+- [ ] แสดง "เลื่อนลงเพื่อโหลดเพิ่ม" เมื่อ hasMore = true
+
+---
+
 ## 🎯 สรุป Architecture
 
 ```
@@ -1467,7 +2114,9 @@ export default function Home() {
 ### `/api/get-pdf`
 **วัตถุประสงค์**: แปลงข้อมูลรายงานเป็น PDF
 
-**Request Body:**
+**⚠️ สำคัญ:** ต้องใช้ `styles` object ที่ครบถ้วน ไม่เช่นนั้น API จะ error
+
+**Request Body (แบบเต็ม):**
 ```typescript
 {
     shopid: string;
@@ -1477,25 +2126,168 @@ export default function Home() {
         description: string;
         orientation: "L" | "P";
         page_size: "A4" | "A3" | "Letter";
-        title_align?: "C" | "L" | "R";
-        description_align?: "C" | "L" | "R";
+        title_align: "C" | "L" | "R";       // ⭐ Required
+        description_align: "C" | "L" | "R";  // ⭐ Required
     };
     layout_config: {
-        schema_version: number;
-        styles?: {
-            header?: StyleConfig;
-            detail?: StyleConfig;
-            summary?: StyleConfig;
-            level_1?: StyleConfig;
+        schema_version: 1;
+        styles: {
+            use_fill: false;
+            header: {
+                background: "#FFFFFF";
+                text: "#000000";
+                border: "#000000";
+                font_weight: "bold";
+            };
+            detail: {
+                background: "#FFFFFF";
+                text: "#000000";
+                border: "#E0E0E0";
+            };
+            summary: {
+                background: "#F5F5F5";
+                text: "#000000";
+                border: "#000000";
+                font_weight: "bold";
+            };
+            table: {
+                row_spacing: 0;
+                column_spacing: 2;
+                grid_color: "#CCCCCC";
+            };
         };
         sections: Array<{
             alias: string;
-            row_type: "detail" | "summary";
+            row_type: "detail" | "summary" | "level_1";
             columns: Array<{ field: string }>;
         }>;
         column_schema: Record<string, ColumnConfig>;
     };
 }
+```
+
+### รูปแบบ `buildPdfConfig` ที่ถูกต้อง
+
+```typescript
+// lib/reports/srrXXXXX/query-builder.ts
+
+export const buildPdfConfig = (guid: string, startDate: Date | null, endDate: Date | null): PdfConfig => {
+    return {
+        shopid: SHOP_ID_PUBLIC,
+        guid,
+        pdf_config: {
+            title: REPORT_NAME,
+            description: `ตั้งแต่วันที่ ${formatThaiDate(startDate)} ถึงวันที่ ${formatThaiDate(endDate)}`,
+            orientation: 'L',
+            page_size: 'A4',
+            title_align: 'C',        // ⭐ ต้องใส่
+            description_align: 'L'   // ⭐ ต้องใส่
+        },
+        layout_config: {
+            schema_version: 1,
+            styles: {                 // ⭐ ต้องใส่ styles object เต็ม
+                use_fill: false,
+                header: {
+                    background: "#FFFFFF",
+                    text: "#000000",
+                    border: "#000000",
+                    font_weight: "bold"
+                },
+                detail: {
+                    background: "#FFFFFF",
+                    text: "#000000",
+                    border: "#E0E0E0"
+                },
+                summary: {
+                    background: "#F5F5F5",
+                    text: "#000000",
+                    border: "#000000",
+                    font_weight: "bold"
+                },
+                table: {
+                    row_spacing: 0,
+                    column_spacing: 2,
+                    grid_color: "#CCCCCC"
+                }
+            },
+            sections: [{
+                alias: "report_data",
+                row_type: "detail",
+                columns: Object.keys(COLUMN_SCHEMA).map(field => ({ field }))
+            }],
+            column_schema: COLUMN_SCHEMA,
+        }
+    };
+};
+```
+
+### Column Schema - ต้องตรงกับ Field Name ใน SQL
+
+**⚠️ สำคัญ:** Key ใน `COLUMN_SCHEMA` ต้องตรงกับ field name (alias) ใน SQL query
+
+**ตัวอย่างที่ถูกต้อง:**
+```typescript
+// SQL Query
+const query = `
+SELECT 
+    code,           -- field name = "code"
+    name_1,         -- field name = "name_1"
+    unit_standard,  -- field name = "unit_standard"
+    p1,             -- field name = "p1"
+    p2              -- field name = "p2"
+FROM table_name
+`;
+
+// Column Schema - Key ต้องตรงกับ field name
+export const COLUMN_SCHEMA = {
+    "code": {           // ✅ ตรงกับ field name
+        label: "รหัส",
+        flex: 8,
+        align: "L",
+        data_type: "string"
+    },
+    "name_1": {         // ✅ ตรงกับ field name
+        label: "ชื่อสินค้า",
+        flex: 15,
+        align: "L",
+        data_type: "string"
+    },
+    "unit_standard": {  // ✅ ตรงกับ field name
+        label: "หน่วยนับ",
+        flex: 6,
+        align: "C",
+        data_type: "string"
+    },
+    "p1": {             // ✅ ตรงกับ field name
+        label: "ราคากลาง",
+        flex: 7,
+        align: "R",
+        data_type: "number",
+        format: "#,##0.00"
+    },
+    "p2": {             // ✅ ตรงกับ field name
+        label: "ราคา 1",
+        flex: 7,
+        align: "R",
+        data_type: "number",
+        format: "#,##0.00"
+    }
+};
+```
+
+**ตัวอย่างที่ผิด:**
+```typescript
+// ❌ ผิด - Key ไม่ตรงกับ field name
+export const COLUMN_SCHEMA = {
+    "รหัสสินค้า": {     // ❌ ไม่ตรงกับ "code"
+        label: "รหัสสินค้า",
+        ...
+    },
+    "ราคา1": {          // ❌ ไม่ตรงกับ "p1"
+        label: "ราคา1",
+        ...
+    }
+};
 ```
 
 ### `/api/mongodb/get`

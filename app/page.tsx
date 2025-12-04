@@ -252,6 +252,89 @@ export default function Home() {
             </Link>
           )}
 
+          {/* Report Card: SRR30003 */}
+          {canAccessReport('SRR30003') && (
+            <Link
+              href="/reports/srr30003"
+              className="group relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-200/60 overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+                <svg className="w-32 h-32 text-cyan-600 transform rotate-12 translate-x-8 -translate-y-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h8.25c1.035 0 1.875-.84 1.875-1.875V15z" />
+                  <path d="M8.25 19.5a3.75 3.75 0 10-7.5 0 3.75 3.75 0 007.5 0zM15.75 19.5a3.75 3.75 0 10-7.5 0 3.75 3.75 0 007.5 0zM21.75 6.375A1.875 1.875 0 0019.875 4.5H16.5v10.5h5.25V6.375zM22.5 15h-6v2.625c0 1.035.84 1.875 1.875 1.875h2.25A1.875 1.875 0 0022.5 17.625V15z" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-cyan-200 group-hover:shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                    </svg>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                    พร้อมใช้งาน
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-cyan-600 transition-colors">
+                  เปรียบเทียบต้นทุนการซื้อล่าสุด
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  รายงาน SRR30003 แสดงการเปรียบเทียบต้นทุนสินค้าจากการซื้อล่าสุด เพื่อติดตามความเปลี่ยนแปลงราคาต้นทุน
+                </p>
+
+                <div className="flex items-center text-cyan-600 font-semibold text-sm group-hover:translate-x-2 transition-transform duration-300">
+                  ดูรายงาน
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 ml-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* Report Card: SRR40006 */}
+          {canAccessReport('SRR40006') && (
+            <Link
+              href="/reports/srr40006"
+              className="group relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-200/60 overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+                <svg className="w-32 h-32 text-teal-600 transform rotate-12 translate-x-8 -translate-y-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.035-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.035.84-1.875 1.875-1.875h.75c1.035 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 01-1.875-1.875V8.625zM3 13.125c0-1.035.84-1.875 1.875-1.875h.75c1.035 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 013 19.875v-6.75z" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-teal-200 group-hover:shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21l3.75-3.75" />
+                    </svg>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                    พร้อมใช้งาน
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">
+                  จัดอันดับยอดขาย-ตามกลุ่มสินค้า
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  รายงาน SRR40006 แสดงการจัดอันดับยอดขายสินค้าตามกลุ่ม พร้อมแยกยอดขายตามคลังสินค้า
+                </p>
+
+                <div className="flex items-center text-teal-600 font-semibold text-sm group-hover:translate-x-2 transition-transform duration-300">
+                  ดูรายงาน
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 ml-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {/* Email Management Card */}
           <Link
             href="/emails"
