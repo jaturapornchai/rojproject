@@ -243,6 +243,9 @@ export default function ReportSRR50003() {
 
             const pdfPayload = pdfConfig;
 
+            // Log PDF config before sending to API
+            console.log('[generatePDF] Sending PDF config:', JSON.stringify(pdfPayload, null, 2));
+
             const pdfRes = await fetch('/api/get-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

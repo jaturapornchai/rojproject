@@ -232,6 +232,9 @@ export default function ReportB4029() {
             // สร้าง PDF Config โดยใช้ shared function
             const pdfConfig = buildPdfConfig(guid, startDate!, endDate!);
 
+            // Log PDF config before sending to API
+            console.log('[generatePDF] Sending PDF config:', JSON.stringify(pdfConfig, null, 2));
+
             const pdfRes = await fetch('/api/get-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

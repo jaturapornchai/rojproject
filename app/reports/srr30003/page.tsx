@@ -294,7 +294,8 @@ export default function ReportSRR30003() {
             // Build PDF config using shared builder
             const pdfConfig = buildPdfConfig(guid, startDate, endDate);
 
-            console.log('[generatePDF] pdfConfig:', pdfConfig);
+            // Log PDF config before sending to API
+            console.log('[generatePDF] Sending PDF config:', JSON.stringify(pdfConfig, null, 2));
 
             const pdfRes = await fetch('/api/get-pdf', {
                 method: 'POST',

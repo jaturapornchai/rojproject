@@ -83,7 +83,7 @@ const DEFAULT_PDF_CONFIG = {
                 font_weight: "bold"
             },
             table: {
-                row_spacing: 0,
+                row_spacing: 1.0,
                 column_spacing: 2,
                 grid_color: "#CCCCCC"
             }

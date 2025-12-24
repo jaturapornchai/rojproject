@@ -265,7 +265,8 @@ export default function ReportSRR20011() {
             // Build PDF config using shared builder
             const pdfConfig = buildPdfConfig(guid, startDate, endDate);
 
-            console.log('[generatePDF] pdfConfig:', pdfConfig);
+            // Log PDF config before sending to API
+            console.log('[generatePDF] Sending PDF config:', JSON.stringify(pdfConfig, null, 2));
 
             const pdfRes = await fetch('/api/get-pdf', {
                 method: 'POST',
@@ -407,38 +408,38 @@ export default function ReportSRR20011() {
                                 {/* Filter Panel */}
                                 <div className="pt-4 border-t border-slate-100">
                                     <FilterPanel
-                                            filters={filters}
-                                            products={products}
-                                            productGroups={productGroups}
-                                            productBrands={productBrands}
-                                            productsLoading={productsLoading}
-                                            productGroupsLoading={productGroupsLoading}
-                                            productBrandsLoading={productBrandsLoading}
-                                            productsHasMore={productsHasMore}
-                                            productGroupsHasMore={productGroupsHasMore}
-                                            productBrandsHasMore={productBrandsHasMore}
-                                            onProductSearch={searchProducts}
-                                            onProductGroupSearch={searchProductGroups}
-                                            onProductBrandSearch={searchProductBrands}
-                                            onLoadMoreProducts={loadMoreProducts}
-                                            onLoadMoreProductGroups={loadMoreProductGroups}
-                                            onLoadMoreProductBrands={loadMoreProductBrands}
-                                            onProductFilterTypeChange={setProductFilterType}
-                                            onSelectedProductChange={setSelectedProduct}
-                                            onProductRangeStartChange={setProductRangeStart}
-                                            onProductRangeEndChange={setProductRangeEnd}
-                                            onToggleProductSelection={toggleProductSelection}
-                                            onProductGroupFilterTypeChange={setProductGroupFilterType}
-                                            onSelectedProductGroupChange={setSelectedProductGroup}
-                                            onProductGroupRangeStartChange={setProductGroupRangeStart}
-                                            onProductGroupRangeEndChange={setProductGroupRangeEnd}
-                                            onToggleProductGroupSelection={toggleProductGroupSelection}
-                                            onProductBrandFilterTypeChange={setProductBrandFilterType}
-                                            onSelectedProductBrandChange={setSelectedProductBrand}
-                                            onProductBrandRangeStartChange={setProductBrandRangeStart}
-                                            onProductBrandRangeEndChange={setProductBrandRangeEnd}
-                                            onToggleProductBrandSelection={toggleProductBrandSelection}
-                                        />
+                                        filters={filters}
+                                        products={products}
+                                        productGroups={productGroups}
+                                        productBrands={productBrands}
+                                        productsLoading={productsLoading}
+                                        productGroupsLoading={productGroupsLoading}
+                                        productBrandsLoading={productBrandsLoading}
+                                        productsHasMore={productsHasMore}
+                                        productGroupsHasMore={productGroupsHasMore}
+                                        productBrandsHasMore={productBrandsHasMore}
+                                        onProductSearch={searchProducts}
+                                        onProductGroupSearch={searchProductGroups}
+                                        onProductBrandSearch={searchProductBrands}
+                                        onLoadMoreProducts={loadMoreProducts}
+                                        onLoadMoreProductGroups={loadMoreProductGroups}
+                                        onLoadMoreProductBrands={loadMoreProductBrands}
+                                        onProductFilterTypeChange={setProductFilterType}
+                                        onSelectedProductChange={setSelectedProduct}
+                                        onProductRangeStartChange={setProductRangeStart}
+                                        onProductRangeEndChange={setProductRangeEnd}
+                                        onToggleProductSelection={toggleProductSelection}
+                                        onProductGroupFilterTypeChange={setProductGroupFilterType}
+                                        onSelectedProductGroupChange={setSelectedProductGroup}
+                                        onProductGroupRangeStartChange={setProductGroupRangeStart}
+                                        onProductGroupRangeEndChange={setProductGroupRangeEnd}
+                                        onToggleProductGroupSelection={toggleProductGroupSelection}
+                                        onProductBrandFilterTypeChange={setProductBrandFilterType}
+                                        onSelectedProductBrandChange={setSelectedProductBrand}
+                                        onProductBrandRangeStartChange={setProductBrandRangeStart}
+                                        onProductBrandRangeEndChange={setProductBrandRangeEnd}
+                                        onToggleProductBrandSelection={toggleProductBrandSelection}
+                                    />
                                 </div>
 
                                 {/* Reset Filters Button */}

@@ -117,7 +117,7 @@ select df.sort ,df.rownumber,df.line_number,df.rownum,df.item_code,df.name_1,df.
 	from detail_final as df
 ) as final
 
-order by final.doc_date_new,final.doc_time_new,item_code,rownum desc,sort,rownumber`;
+order by final.doc_date_new,final.doc_time_new,item_code,rownum desc,rownumber`;
 
 // Master Data Queries
 export const MASTER_DATA_QUERIES = {
@@ -126,10 +126,10 @@ export const MASTER_DATA_QUERIES = {
     productBrands: "select code,name_1 from ic_brand order by code"
 };
 
-// Default Summary Config - Level 1 by line_num, doc_date_new, doc_time_new, doc_date_old, doc_time_old, ic_code, name_1, unit_code_new, group_main, item_brand, user_name
+// Default Summary Config - เรียงตาม order by: doc_date_new, doc_time_new, item_code, rownum, rownumber
 export const DEFAULT_SUMMARY_CONFIG = {
     levels: [{
-        group_by_fields: ["line_num", "doc_date_new", "doc_time_new", "doc_date_old", "doc_time_old", "ic_code", "name_1", "unit_code_new", "group_main", "item_brand", "user_name"],
+        group_by_fields: ["doc_date_new", "doc_time_new", "item_code", "rownumber"],
         sum_fields: [],
         typejson: 1
     }],
@@ -322,7 +322,7 @@ export const getDefaultPdfConfig = (thaiStartDate: string, thaiEndDate: string):
                 font_weight: "bold"
             },
             table: {
-                row_spacing: 0,
+                row_spacing: 1.0,
                 column_spacing: 2,
                 grid_color: "#CCCCCC"
             }

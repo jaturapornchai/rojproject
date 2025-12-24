@@ -8,8 +8,8 @@ import ThaiDatePicker from '@/components/ThaiDatePicker';
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
 
 // Shared modules
-import { 
-    REPORT_ID, 
+import {
+    REPORT_ID,
     REPORT_NAME,
     buildQuery,
     buildPdfConfig,
@@ -17,11 +17,11 @@ import {
     type ReportFilters
 } from '@/lib/reports/srr40010';
 import { useReportFilters, useDateRange, useMasterData } from '@/hooks/reports/srr40010';
-import { 
-    FilterPanel, 
-    DatePresetButtons, 
+import {
+    FilterPanel,
+    DatePresetButtons,
     MonthYearSelector,
-    FilterSummary 
+    FilterSummary
 } from '@/components/reports/srr40010';
 
 interface ReportLog {
@@ -35,7 +35,7 @@ export default function ReportSRR40010() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [logs, setLogs] = useState<ReportLog[]>([]);
-    
+
     // ใช้ Custom Hooks
     const { startDate, endDate, setStartDate, setEndDate, handlePreset, handleMonthSelect, handleYearSelect } = useDateRange({ defaultPreset: 'thisMonth' });
     const { customers, branches } = useMasterData();
@@ -157,7 +157,7 @@ export default function ReportSRR40010() {
 
     const handleGenerateResult = async () => {
         setError(null);
-        
+
         if (!startDate || !endDate) {
             setError('กรุณาเลือกช่วงวันที่');
             return;
@@ -245,6 +245,9 @@ export default function ReportSRR40010() {
         try {
             // สร้าง PDF Config โดยใช้ shared function
             const pdfConfig = buildPdfConfig(guid, startDate!, endDate!);
+
+            // Log PDF config before sending to API
+            console.log('[generatePDF] Sending PDF config:', JSON.stringify(pdfConfig, null, 2));
 
             const pdfRes = await fetch('/api/get-pdf', {
                 method: 'POST',
@@ -343,9 +346,9 @@ export default function ReportSRR40010() {
                     </div>
 
                     {/* Filter Summary */}
-                    <FilterSummary 
-                        filters={filters} 
-                        customers={customers} 
+                    <FilterSummary
+                        filters={filters}
+                        customers={customers}
                         branches={branches}
                         className="pt-2"
                     />

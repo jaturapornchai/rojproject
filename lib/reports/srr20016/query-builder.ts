@@ -2,6 +2,7 @@
 
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
 import { BASE_QUERY_TEMPLATE, COLUMN_SCHEMA, REPORT_NAME, THAI_MONTHS } from './config';
+import { SHARED_PDF_STYLES } from '../shared-styles';
 import type { ReportFilters, PdfConfig } from './types';
 
 // Format date for SQL (YYYY-MM-DD)
@@ -120,37 +121,7 @@ export const buildPdfConfig = (
         },
         layout_config: {
             schema_version: 1,
-            styles: {
-                use_fill: false,
-                header: {
-                    background: "#FFFFFF",
-                    text: "#000000",
-                    border: "#000000",
-                    font_weight: "bold"
-                },
-                detail: {
-                    background: "#FFFFFF",
-                    text: "#000000",
-                    border: "#E0E0E0"
-                },
-                summary: {
-                    background: "#F5F5F5",
-                    text: "#000000",
-                    border: "#000000",
-                    font_weight: "bold"
-                },
-                level_1: {
-                    background: "#F5F5F5",
-                    text: "#000000",
-                    border: "#000000",
-                    font_weight: "bold"
-                },
-                table: {
-                    row_spacing: 0,
-                    column_spacing: 2,
-                    grid_color: "#CCCCCC"
-                }
-            },
+            styles: SHARED_PDF_STYLES,
             sections: [
                 // Level 1: กลุ่มตาม line_num, doc_date_new, doc_time_new, doc_date_old, doc_time_old, ic_code, name_1, unit_code_new, group_main, item_brand, user_name
                 {

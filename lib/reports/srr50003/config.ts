@@ -1,6 +1,7 @@
 // Config สำหรับ SRR50003 - รายงานสรุปยอดขายประจำวัน
 
 import type { DatePreset, DayOfWeek, ReportFilters } from './types';
+import { SHARED_PDF_STYLES } from '../shared-styles';
 
 // Report Identification
 export const REPORT_ID = 'SRR50003';
@@ -143,37 +144,7 @@ export const COLUMN_SCHEMA = {
 };
 
 // PDF Styles
-export const PDF_STYLES = {
-    use_fill: false,
-    header: {
-        background: "#FFFFFF",
-        text: "#000000",
-        border: "#000000",
-        font_weight: "bold"
-    },
-    detail: {
-        background: "#FFFFFF",
-        text: "#000000",
-        border: "#E0E0E0"
-    },
-    summary: {
-        background: "#F5F5F5",
-        text: "#000000",
-        border: "#000000",
-        font_weight: "bold"
-    },
-    level_1: {
-        background: "#F5F5F5",
-        text: "#000000",
-        border: "#000000",
-        font_weight: "bold"
-    },
-    table: {
-        row_spacing: 0,
-        column_spacing: 2,
-        grid_color: "#CCCCCC"
-    }
-};
+export const PDF_STYLES = SHARED_PDF_STYLES;
 
 // Date Presets
 export const DATE_PRESETS: DatePreset[] = [

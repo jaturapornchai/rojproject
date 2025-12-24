@@ -1,15 +1,16 @@
 // Config สำหรับ SRR40010 - รายงานเปรียบเทียบราคาขาย
 
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
-import type { 
-    QueryConfig, 
-    PdfConfig, 
-    DatePreset, 
+import type {
+    QueryConfig,
+    PdfConfig,
+    DatePreset,
     DayOfWeek,
     ReportFilters,
     CustomerFilterState,
     BranchFilterState
 } from './types';
+import { SHARED_PDF_STYLES } from '../shared-styles';
 
 // Report Info
 export const REPORT_ID = 'SRR40010';
@@ -262,37 +263,7 @@ export const getDefaultPdfConfig = (thaiStartDate: string, thaiEndDate: string):
     },
     layout_config: {
         schema_version: 1,
-        styles: {
-            use_fill: false,
-            header: {
-                background: "#FFFFFF",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            detail: {
-                background: "#FFFFFF",
-                text: "#000000",
-                border: "#E0E0E0"
-            },
-            summary: {
-                background: "#F5F5F5",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            level_1: {
-                background: "#F5F5F5",
-                text: "#000000",
-                border: "#000000",
-                font_weight: "bold"
-            },
-            table: {
-                row_spacing: 0,
-                column_spacing: 2,
-                grid_color: "#CCCCCC"
-            }
-        },
+        styles: SHARED_PDF_STYLES,
         sections: [{
             alias: "price_comparison",
             row_type: "detail",

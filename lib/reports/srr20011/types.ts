@@ -66,6 +66,8 @@ export interface PdfConfig {
         description: string;
         orientation: 'L' | 'P';
         page_size: string;
+        title_align?: string;
+        description_align?: string;
     };
     layout_config: {
         schema_version: number;

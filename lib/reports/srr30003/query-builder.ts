@@ -2,6 +2,7 @@
 
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
 import { BASE_QUERY_TEMPLATE, COLUMN_SCHEMA, REPORT_NAME, THAI_MONTHS, getDefaultReportFilters } from './config';
+import { SHARED_PDF_STYLES } from '../shared-styles';
 import type { ReportFilters, QueryConfig, PdfConfig } from './types';
 
 // Format date for SQL
@@ -151,7 +152,7 @@ export const buildShelfFilter = (filters: ReportFilters): string => {
 // Build complete query
 export const buildQuery = (config: QueryConfig): string => {
     const { startDate, endDate, filters } = config;
-    
+
     let query = BASE_QUERY_TEMPLATE
         .replace('{{startDate}}', formatDateForQuery(startDate))
         .replace('{{endDate}}', formatDateForQuery(endDate))
@@ -161,7 +162,7 @@ export const buildQuery = (config: QueryConfig): string => {
         .replace('{{productBrandFilter}}', buildProductBrandFilter(filters))
         .replace('{{warehouseFilter}}', buildWarehouseFilter(filters))
         .replace('{{shelfFilter}}', buildShelfFilter(filters));
-    
+
     return query;
 };
 
@@ -180,31 +181,7 @@ export const buildPdfConfig = (guid: string, startDate: Date | null, endDate: Da
         },
         layout_config: {
             schema_version: 1,
-            styles: {
-                use_fill: false,
-                header: {
-                    background: "#FFFFFF",
-                    text: "#000000",
-                    border: "#000000",
-                    font_weight: "bold"
-                },
-                detail: {
-                    background: "#FFFFFF",
-                    text: "#000000",
-                    border: "#E0E0E0"
-                },
-                summary: {
-                    background: "#F5F5F5",
-                    text: "#000000",
-                    border: "#000000",
-                    font_weight: "bold"
-                },
-                table: {
-                    row_spacing: 0,
-                    column_spacing: 2,
-                    grid_color: "#CCCCCC"
-                }
-            },
+            styles: SHARED_PDF_STYLES,
             sections: [{
                 alias: "report_data",
                 row_type: "detail",
@@ -219,7 +196,7 @@ export const buildPdfConfig = (guid: string, startDate: Date | null, endDate: Da
 export const calculateDateFromPreset = (preset: string): { startDate: Date; endDate: Date } => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     switch (preset) {
         case 'today':
             return { startDate: new Date(today), endDate: new Date(today) };

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ThaiDatePicker from '@/components/ThaiDatePicker';
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
+import { SHARED_PDF_STYLES, buildStandardPdfConfig } from '@/lib/reports/shared-styles';
 
 interface ReportLog {
     email: string;
@@ -311,47 +312,14 @@ export default function ReportSRR40001() {
             const pdfPayload = {
                 shopid: SHOP_ID_PUBLIC,
                 guid,
-                pdf_config: {
-                    title: "รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า (SRR40001)",
-                    description: `ตั้งแต่วันที่ ${formatThaiDateForPdf(startDate)} ถึงวันที่ ${formatThaiDateForPdf(endDate)}`,
-                    title_align: "C",
-                    description_align: "L",
-                    orientation: "L",
-                    page_size: "A4"
-                },
+                pdf_config: buildStandardPdfConfig(
+                    "รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า (SRR40001)",
+                    `ตั้งแต่วันที่ ${formatThaiDateForPdf(startDate)} ถึงวันที่ ${formatThaiDateForPdf(endDate)}`,
+                    "L"
+                ),
                 layout_config: {
                     schema_version: 1,
-                    styles: {
-                        use_fill: false,
-                        header: {
-                            background: "#FFFFFF",
-                            text: "#000000",
-                            border: "#000000",
-                            font_weight: "bold"
-                        },
-                        detail: {
-                            background: "#FFFFFF",
-                            text: "#000000",
-                            border: "#E0E0E0"
-                        },
-                        summary: {
-                            background: "#F5F5F5",
-                            text: "#000000",
-                            border: "#000000",
-                            font_weight: "bold"
-                        },
-                        level_1: {
-                            background: "#F5F5F5",
-                            text: "#000000",
-                            border: "#000000",
-                            font_weight: "bold"
-                        },
-                        table: {
-                            row_spacing: 0,
-                            column_spacing: 2,
-                            grid_color: "#CCCCCC"
-                        }
-                    },
+                    styles: SHARED_PDF_STYLES,
                     sections: [
                         {
                             alias: "inventory_list",
