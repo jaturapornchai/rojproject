@@ -220,7 +220,11 @@ export default function ScheduleManagement() {
 
         // Load filter config ถ้ามี
         if (schedule.filter_config) {
-            setFilters(deserializeFilters(schedule.filter_config));
+            const filterConfig = schedule.filter_config;
+            const parsedFilters = typeof filterConfig === 'string'
+                ? deserializeFilters(filterConfig)
+                : filterConfig;
+            setFilters(parsedFilters);
         } else {
             resetAllFilters();
         }
@@ -335,9 +339,11 @@ export default function ScheduleManagement() {
     };
 
     // Helper to display filter summary
-    const getFilterSummary = (filterConfig: string | undefined) => {
+    const getFilterSummary = (filterConfig: string | ReportFilters | undefined) => {
         if (!filterConfig) return null;
-        const filters = deserializeFilters(filterConfig);
+        const filters = typeof filterConfig === 'string'
+            ? deserializeFilters(filterConfig)
+            : filterConfig;
         const items: string[] = [];
 
         if (filters.product.filterType !== 'all') {
@@ -599,11 +605,10 @@ export default function ScheduleManagement() {
                                             key={day.value}
                                             type="button"
                                             onClick={() => toggleDayOfWeek(day.value)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                                formData.days_of_week.includes(day.value)
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.days_of_week.includes(day.value)
                                                     ? 'bg-rose-600 text-white'
                                                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                            }`}
+                                                }`}
                                         >
                                             {day.label}
                                         </button>
@@ -765,11 +770,10 @@ export default function ScheduleManagement() {
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="font-semibold text-slate-900">{schedule.schedule_name}</h3>
-                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                        schedule.enabled
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${schedule.enabled
                                                             ? 'bg-emerald-100 text-emerald-700'
                                                             : 'bg-slate-100 text-slate-600'
-                                                    }`}>
+                                                        }`}>
                                                         {schedule.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                                                     </span>
                                                 </div>
