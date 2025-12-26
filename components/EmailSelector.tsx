@@ -29,7 +29,7 @@ export default function EmailSelector({ selectedEmails, onChange, label = "Selec
 
     const fetchContacts = async () => {
         try {
-            const response = await fetch('/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/mongodb/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

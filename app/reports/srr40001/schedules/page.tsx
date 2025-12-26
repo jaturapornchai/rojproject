@@ -203,7 +203,7 @@ export default function ScheduleManagement() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/mongodb/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -250,7 +250,7 @@ export default function ScheduleManagement() {
                 upsert: true,
             };
 
-            const response = await fetch('/api/mongodb/update', {
+            const response = await fetch('/rojproject/api/mongodb/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -283,7 +283,7 @@ export default function ScheduleManagement() {
         setError(null);
 
         try {
-            const response = await fetch('/api/process-schedule', {
+            const response = await fetch('/rojproject/api/process-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -335,7 +335,7 @@ export default function ScheduleManagement() {
         }
 
         try {
-            const response = await fetch('/api/mongodb/delete', {
+            const response = await fetch('/rojproject/api/mongodb/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -359,7 +359,7 @@ export default function ScheduleManagement() {
 
     const toggleEnabled = async (schedule: EmailSchedule) => {
         try {
-            const response = await fetch('/api/mongodb/update', {
+            const response = await fetch('/rojproject/api/mongodb/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

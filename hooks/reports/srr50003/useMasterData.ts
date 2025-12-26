@@ -35,7 +35,7 @@ export function useMasterData(options?: UseMasterDataOptions): UseMasterDataRetu
         setEmployeesError(null);
 
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -73,7 +73,7 @@ export function useMasterData(options?: UseMasterDataOptions): UseMasterDataRetu
         setBranchesError(null);
 
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

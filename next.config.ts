@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  /* config options here */
+  basePath: '/rojproject',
+  assetPrefix: '/rojproject',
 };
 
 export default nextConfig;

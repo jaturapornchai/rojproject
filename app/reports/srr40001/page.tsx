@@ -75,7 +75,7 @@ export default function ReportSRR40001() {
 
     const fetchLogs = async () => {
         try {
-            const response = await fetch('/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/mongodb/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -101,7 +101,7 @@ export default function ReportSRR40001() {
         try {
             const now = new Date().toISOString();
             const normalizedEmail = session?.user?.email?.toLowerCase() || 'unknown';
-            await fetch('/api/mongodb/update', {
+            await fetch('/rojproject/api/mongodb/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -264,7 +264,7 @@ export default function ReportSRR40001() {
                 ]
             };
 
-            const reportRes = await fetch('/api/generate-report', {
+            const reportRes = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestPayload),
@@ -359,7 +359,7 @@ export default function ReportSRR40001() {
                 }
             };
 
-            const pdfRes = await fetch('/api/get-pdf', {
+            const pdfRes = await fetch('/rojproject/api/get-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(pdfPayload),

@@ -46,7 +46,7 @@ export const useMasterData = () => {
                 LIMIT ${PAGE_SIZE} OFFSET ${offset}
             `;
 
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -112,7 +112,7 @@ export const useMasterData = () => {
                 LIMIT ${PAGE_SIZE} OFFSET ${offset}
             `;
 
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -176,7 +176,7 @@ export const useMasterData = () => {
                 LIMIT ${PAGE_SIZE} OFFSET ${offset}
             `;
 
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

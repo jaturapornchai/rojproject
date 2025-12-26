@@ -55,7 +55,7 @@ export default function AccessManagementPage() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/mongodb/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -133,7 +133,7 @@ export default function AccessManagementPage() {
                 upsert: true,
             };
 
-            const response = await fetch('/api/mongodb/update', {
+            const response = await fetch('/rojproject/api/mongodb/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -154,7 +154,7 @@ export default function AccessManagementPage() {
     const handleToggleActive = async (record: AllowedUser, nextActive: boolean) => {
         try {
             const now = new Date().toISOString();
-            const response = await fetch('/api/mongodb/update', {
+            const response = await fetch('/rojproject/api/mongodb/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -185,7 +185,7 @@ export default function AccessManagementPage() {
         }
 
         try {
-            const response = await fetch('/api/mongodb/delete', {
+            const response = await fetch('/rojproject/api/mongodb/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

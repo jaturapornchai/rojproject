@@ -12,7 +12,7 @@ export const useMasterData = () => {
 
     const fetchProductGroups = useCallback(async () => {
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -35,7 +35,7 @@ export const useMasterData = () => {
 
     const fetchWarehouses = useCallback(async () => {
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -58,7 +58,7 @@ export const useMasterData = () => {
 
     const fetchBrands = useCallback(async () => {
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

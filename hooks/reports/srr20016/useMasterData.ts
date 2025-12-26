@@ -46,7 +46,7 @@ export function useMasterData(options?: UseMasterDataOptions): UseMasterDataRetu
         setProductsError(null);
 
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -85,7 +85,7 @@ export function useMasterData(options?: UseMasterDataOptions): UseMasterDataRetu
         setProductGroupsError(null);
 
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -124,7 +124,7 @@ export function useMasterData(options?: UseMasterDataOptions): UseMasterDataRetu
         setProductBrandsError(null);
 
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch('/rojproject/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

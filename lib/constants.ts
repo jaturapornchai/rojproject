@@ -11,3 +11,5 @@ export const DEFAULT_ADMIN_EMAILS = [
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
 export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8108/v1';
+export const BASE_PATH = '/rojproject';
+
