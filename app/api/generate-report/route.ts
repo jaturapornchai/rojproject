@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 
-const API_BASE_URL = process.env.BACKEND_URL || 'https://smlgoapi.dedepos.com/v1';
+import { BACKEND_URL as API_BASE_URL } from '@/lib/constants';
 
 interface ResultGetRow {
     querynumber?: number;

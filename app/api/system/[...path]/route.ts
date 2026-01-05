@@ -3,10 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8108/v1';
 
 export async function POST(request: NextRequest) {
+    const { pathname } = new URL(request.url);
+    const apiPath = pathname.replace('/api/system/', '');
+
     try {
         const body = await request.json();
 
-        const response = await fetch(`${BACKEND_URL}/mongoatlasdelete`, {
+        const response = await fetch(`${BACKEND_URL}/system/${apiPath}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -18,14 +21,14 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
             return NextResponse.json(
-                { error: data.message || 'Failed to delete data' },
+                { error: data.error || 'Backend API error' },
                 { status: response.status }
             );
         }
 
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error('MongoDB delete error:', error);
+        console.error(`System API error [${apiPath}]:`, error);
         return NextResponse.json(
             { error: error.message || 'Internal server error' },
             { status: 500 }

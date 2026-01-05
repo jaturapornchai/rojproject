@@ -6,23 +6,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
 
 interface AllowedUser {
-    email: string;
+    username: string;
     role: 'admin' | 'user';
     is_active?: boolean;
+    is_admin?: boolean;
     allowed_reports?: string[];
     created_at?: string;
     updated_at?: string;
 }
 
 interface FormState {
-    email: string;
+    username: string;
+    password?: string;
     role: 'admin' | 'user';
     is_active: boolean;
     allowed_reports: string[];
 }
 
 const defaultFormState: FormState = {
-    email: '',
+    username: '',
+    password: '',
     role: 'user',
     is_active: true,
     allowed_reports: [],
@@ -37,10 +40,18 @@ export default function AccessManagementPage() {
     const [showForm, setShowForm] = useState(false);
     const [formState, setFormState] = useState<FormState>(defaultFormState);
     const [editingUser, setEditingUser] = useState<AllowedUser | null>(null);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
     const shopId = SHOP_ID_PUBLIC;
 
     const AVAILABLE_REPORTS = [
         { id: 'SRR40001', name: 'รายงานวิเคราะห์ขายขาดทุน (SRR40001)' },
+        { id: 'SRR20011', name: 'รายงานใบบันทึกรายการ (SRR20011)' },
+        { id: 'SRR20016', name: 'รายงานสรุปยอดขายตามสินค้า (SRR20016)' },
+        { id: 'SRR30003', name: 'รายงานสรุปยอดค้างชำระ (SRR30003)' },
+        { id: 'SRR40006', name: 'รายงานความเคลื่อนไหวสินค้า (SRR40006)' },
+        { id: 'SRR40010', name: 'รายงานสรุปยอดขายตามกลุ่ม (SRR40010)' },
+        { id: 'SRR50003', name: 'รายงานวิเคราะห์กำไรขั้นต้น (SRR50003)' },
+        { id: 'B4029', name: 'รายงานสรุปยอดขาย (B4029)' },
     ];
 
     const adminCount = useMemo(() => users.filter((user) => user.role === 'admin').length, [users]);
@@ -55,14 +66,10 @@ export default function AccessManagementPage() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/user/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'user_access',
-                    filter: { shopid: shopId },
-                    sort: { updated_at: -1 },
-                }),
+                body: JSON.stringify({ shopid: shopId }),
             });
 
             const data = await response.json();
@@ -70,7 +77,11 @@ export default function AccessManagementPage() {
                 throw new Error(data.error || 'ไม่สามารถดึงข้อมูลสิทธิ์ผู้ใช้ได้');
             }
 
-            const list = Array.isArray(data.data) ? data.data : [];
+            const listData = Array.isArray(data.data) ? data.data : [];
+            const list = listData.map((u: any) => ({
+                ...u,
+                allowed_reports: typeof u.allowed_reports === 'string' ? JSON.parse(u.allowed_reports) : (u.allowed_reports || []),
+            }));
             setUsers(list as AllowedUser[]);
         } catch (err: any) {
             setError(err.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
@@ -82,7 +93,8 @@ export default function AccessManagementPage() {
     const handleEdit = (record: AllowedUser) => {
         setEditingUser(record);
         setFormState({
-            email: record.email,
+            username: record.username,
+            password: '', // Don't show password
             role: (record.role ?? 'user'),
             is_active: record.is_active !== false,
             allowed_reports: record.allowed_reports || [],
@@ -109,31 +121,29 @@ export default function AccessManagementPage() {
         event.preventDefault();
         setError(null);
 
-        const normalizedEmail = formState.email.trim().toLowerCase();
-        if (!normalizedEmail) {
-            setError('กรุณาระบุอีเมล');
+        const normalizedUsername = formState.username.trim().toLowerCase();
+        if (!normalizedUsername) {
+            setError('กรุณาระบุชื่อผู้ใช้/อีเมล');
+            return;
+        }
+
+        if (!editingUser && !formState.password) {
+            setError('กรุณาระบุรหัสผ่านสำหรับผู้ใช้ใหม่');
             return;
         }
 
         try {
-            const now = new Date().toISOString();
             const payload = {
-                collection: 'user_access',
-                filter: { shopid: shopId, email: normalizedEmail },
-                data: {
-                    shopid: shopId,
-                    email: normalizedEmail,
-                    role: formState.role,
-                    is_admin: formState.role === 'admin',
-                    is_active: formState.is_active,
-                    allowed_reports: formState.allowed_reports,
-                    created_at: editingUser?.created_at ?? now,
-                    updated_at: now,
-                },
-                upsert: true,
+                username: normalizedUsername,
+                password: formState.password, // This will be hashed in backend
+                role: formState.role,
+                is_admin: formState.role === 'admin',
+                is_active: formState.is_active,
+                shop_id: shopId,
+                allowed_reports: JSON.stringify(formState.allowed_reports),
             };
 
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const response = await fetch('/rojproject/api/system/user/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -153,23 +163,24 @@ export default function AccessManagementPage() {
 
     const handleToggleActive = async (record: AllowedUser, nextActive: boolean) => {
         try {
-            const now = new Date().toISOString();
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const payload = {
+                username: record.username,
+                password: '', // Don't change password
+                role: record.role,
+                is_admin: record.is_admin,
+                is_active: nextActive,
+                shop_id: shopId,
+                allowed_reports: JSON.stringify(record.allowed_reports),
+            };
+
+            const response = await fetch('/rojproject/api/system/user/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'user_access',
-                    filter: { shopid: shopId, email: record.email },
-                    data: {
-                        is_active: nextActive,
-                        updated_at: now,
-                    },
-                    upsert: false,
-                }),
+                body: JSON.stringify(payload),
             });
 
-            const data = await response.json();
             if (!response.ok) {
+                const data = await response.json();
                 throw new Error(data.error || 'ไม่สามารถอัปเดตสถานะได้');
             }
 
@@ -180,18 +191,16 @@ export default function AccessManagementPage() {
     };
 
     const handleDelete = async (record: AllowedUser) => {
-        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสิทธิ์ของ ${record.email}?`)) {
+        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสิทธิ์ของ ${record.username}?`)) {
             return;
         }
 
         try {
-            const response = await fetch('/rojproject/api/mongodb/delete', {
+            const response = await fetch('/rojproject/api/system/user/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    collection: 'user_access',
-                    filter: { shopid: shopId, email: record.email },
-                    delete_many: false,
+                    username: record.username,
                 }),
             });
 
@@ -293,17 +302,28 @@ export default function AccessManagementPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900">{editingUser ? 'แก้ไขสิทธิ์ผู้ใช้' : 'เพิ่มสิทธิ์ผู้ใช้ใหม่'}</h2>
                         </div>
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="space-y-2 md:col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700">อีเมล <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-semibold text-gray-700">ชื่อผู้ใช้/อีเมล <span className="text-red-500">*</span></label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     required
-                                    value={formState.email}
-                                    onChange={(event) => setFormState({ ...formState, email: event.target.value })}
+                                    value={formState.username}
+                                    onChange={(event) => setFormState({ ...formState, username: event.target.value })}
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-black"
-                                    placeholder="user@example.com"
+                                    placeholder="admin or user@example.com"
                                     disabled={Boolean(editingUser)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-700">รหัสผ่าน {editingUser && '(เว้นว่างถ้าไม่เปลี่ยน)'}</label>
+                                <input
+                                    type="password"
+                                    required={!editingUser}
+                                    value={formState.password}
+                                    onChange={(event) => setFormState({ ...formState, password: event.target.value })}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-black"
+                                    placeholder="••••••••"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -413,8 +433,8 @@ export default function AccessManagementPage() {
                                     {users.map((user) => {
                                         const isActive = user.is_active !== false;
                                         return (
-                                            <tr key={user.email} className="hover:bg-gray-50/80 transition-colors group">
-                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">{user.email}</td>
+                                            <tr key={user.username} className="hover:bg-gray-50/80 transition-colors group">
+                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">{user.username}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${user.role === 'admin'
                                                         ? 'bg-blue-50 text-blue-700 border-blue-100'
@@ -437,12 +457,15 @@ export default function AccessManagementPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${isActive
-                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                                        : 'bg-red-50 text-red-700 border-red-100'
-                                                        }`}>
+                                                    <button
+                                                        onClick={() => handleToggleActive(user, !isActive)}
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${isActive
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100'
+                                                            : 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100'
+                                                            }`}
+                                                    >
                                                         {isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                                                    </span>
+                                                    </button>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-sm">
                                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -453,15 +476,6 @@ export default function AccessManagementPage() {
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleToggleActive(user, !isActive)}
-                                                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                            title={isActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75l2.25 2.25L15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
                                                         </button>
                                                         <button

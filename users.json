@@ -1,0 +1,21 @@
+[
+    {
+        "username": "admin",
+        "password": "$2a$10$X87I.f8.5pSjP6M3W0h/6uK/y1L.Tqj6ZJ9z.0u8Vj9GvI8r1L8e2",
+        "role": "admin",
+        "isAdmin": true,
+        "shopId": "rungroj",
+        "allowed_reports": []
+    },
+    {
+        "username": "user1",
+        "password": "$2a$10$U.L8l6J8y9N2H4J8z8G8uO7.r8y9v0i1o2u3p4r5s6t7u8v9w0x1",
+        "role": "user",
+        "isAdmin": false,
+        "shopId": "rungroj",
+        "allowed_reports": [
+            "SRR10001",
+            "SRR20002"
+        ]
+    }
+]

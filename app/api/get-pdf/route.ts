@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.BACKEND_URL || 'https://smlgoapi.dedepos.com/v1';
+import { BACKEND_URL as API_BASE_URL } from '@/lib/constants';
 
 export async function POST(request: Request) {
     try {

@@ -203,14 +203,10 @@ export default function ScheduleManagement() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/schedules/get-by-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid },
-                    sort: { created_at: -1 },
-                }),
+                body: JSON.stringify({ shopid, reportid }),
             });
 
             const data = await response.json();
@@ -219,7 +215,20 @@ export default function ScheduleManagement() {
                 throw new Error(data.error || 'Failed to fetch schedules');
             }
 
-            setSchedules(data.data || []);
+            const parsedSchedules = (data.data || []).map((item: any) => {
+                try {
+                    const pattern = JSON.parse(item.schedule_pattern);
+                    return {
+                        ...pattern,
+                        schedule_id: item.schedule_id,
+                        schedule_name: item.schedule_name,
+                    };
+                } catch (e) {
+                    return item;
+                }
+            });
+
+            setSchedules(parsedSchedules);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -235,22 +244,27 @@ export default function ScheduleManagement() {
             const now = new Date().toISOString();
             const schedule_id = editingId || ('schedule-' + Date.now());
 
-            const payload = {
-                collection: 'email_schedules',
-                filter: { shopid, reportid, schedule_id },
-                data: {
-                    shopid,
-                    reportid,
-                    schedule_id,
-                    report_name: 'รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า',
-                    ...formData,
-                    created_at: editingId ? undefined : now,
-                    updated_at: now,
-                },
-                upsert: true,
+            const scheduleData = {
+                shopid,
+                reportid,
+                schedule_id,
+                report_name: 'รายงานวิเคราะห์ขายขาดทุนแสดงรายละเอียดสินค้า',
+                ...formData,
+                created_at: editingId ? undefined : now,
+                updated_at: now,
             };
 
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const payload = {
+                schedule_id,
+                schedule_name: formData.schedule_name,
+                shop_id: shopid,
+                report_id: reportid,
+                schedule_pattern: JSON.stringify(scheduleData),
+                next_run_at: new Date(), // This should be calculated properly but for now let's set it to now
+                interval_minutes: 0,
+            };
+
+            const response = await fetch('/rojproject/api/system/schedules/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -335,14 +349,10 @@ export default function ScheduleManagement() {
         }
 
         try {
-            const response = await fetch('/rojproject/api/mongodb/delete', {
+            const response = await fetch('/rojproject/api/system/schedules/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid, schedule_id },
-                    delete_many: false,
-                }),
+                body: JSON.stringify({ schedule_id }),
             });
 
             const data = await response.json();
@@ -359,18 +369,26 @@ export default function ScheduleManagement() {
 
     const toggleEnabled = async (schedule: EmailSchedule) => {
         try {
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const updatedSchedule = {
+                ...schedule,
+                enabled: !schedule.enabled,
+                updated_at: new Date().toISOString(),
+            };
+
+            const payload = {
+                schedule_id: schedule.schedule_id,
+                schedule_name: schedule.schedule_name,
+                shop_id: shopid,
+                report_id: reportid,
+                schedule_pattern: JSON.stringify(updatedSchedule),
+                next_run_at: new Date(),
+                interval_minutes: 0,
+            };
+
+            const response = await fetch('/rojproject/api/system/schedules/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid, schedule_id: schedule.schedule_id },
-                    data: {
-                        enabled: !schedule.enabled,
-                        updated_at: new Date().toISOString(),
-                    },
-                    upsert: false,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();

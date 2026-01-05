@@ -35,14 +35,10 @@ export default function EmailManagement() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/email-settings/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_contacts',
-                    filter: { shopid },
-                    sort: { created_at: -1 },
-                }),
+                body: JSON.stringify({ shopid }),
             });
 
             const data = await response.json();
@@ -51,7 +47,8 @@ export default function EmailManagement() {
                 throw new Error(data.error || 'Failed to fetch contacts');
             }
 
-            setContacts(data.data || []);
+            const emailList = data.email_list ? JSON.parse(data.email_list) : [];
+            setContacts(emailList);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -64,36 +61,46 @@ export default function EmailManagement() {
         setError(null);
 
         try {
+            let newContacts: EmailContact[];
             const now = new Date().toISOString();
-            const payload = {
-                collection: 'email_contacts',
-                filter: { shopid, email: formData.email },
-                data: {
-                    shopid,
-                    ...formData,
-                    created_at: editingEmail ? undefined : now,
-                    updated_at: now,
-                },
-                upsert: true,
-            };
 
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            if (editingEmail) {
+                // Update existing
+                newContacts = contacts.map(c =>
+                    c.email === editingEmail ? { ...formData, updated_at: now } : c
+                );
+            } else {
+                // Check if email already exists
+                if (contacts.some(c => c.email === formData.email)) {
+                    throw new Error('อีเมลนี้มีอยู่แล้วในระบบ');
+                }
+                // Add new
+                newContacts = [
+                    { ...formData, created_at: now, updated_at: now },
+                    ...contacts
+                ];
+            }
+
+            const response = await fetch('/rojproject/api/system/email-settings/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({
+                    shopid,
+                    email_list: JSON.stringify(newContacts)
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to save contact');
+                throw new Error(data.error || 'Failed to save contacts');
             }
 
-            // Reset form and refresh list
+            // Reset form and update state
+            setContacts(newContacts);
             setFormData({ email: '', name: '', position: '' });
             setShowForm(false);
             setEditingEmail(null);
-            fetchContacts();
         } catch (err: any) {
             setError(err.message);
         }
@@ -115,13 +122,14 @@ export default function EmailManagement() {
         }
 
         try {
-            const response = await fetch('/rojproject/api/mongodb/delete', {
+            const newContacts = contacts.filter(c => c.email !== email);
+
+            const response = await fetch('/rojproject/api/system/email-settings/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    collection: 'email_contacts',
-                    filter: { shopid, email },
-                    delete_many: false,
+                    shopid,
+                    email_list: JSON.stringify(newContacts)
                 }),
             });
 
@@ -131,7 +139,7 @@ export default function EmailManagement() {
                 throw new Error(data.error || 'Failed to delete contact');
             }
 
-            fetchContacts();
+            setContacts(newContacts);
         } catch (err: any) {
             setError(err.message);
         }

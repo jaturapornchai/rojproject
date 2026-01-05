@@ -32,9 +32,8 @@ import {
 } from '@/components/reports/srr50003';
 
 interface ReportLog {
-    email: string;
-    report_name: string;
-    conditions: string;
+    username: string;
+    details: string;
     created_at: string;
 }
 
@@ -85,16 +84,12 @@ export default function ReportSRR50003() {
 
     const fetchLogs = async () => {
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/activity/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    collection: 'report_access_logs',
-                    filter: {
-                        shopid: SHOP_ID_PUBLIC,
-                        report_name: REPORT_ID
-                    },
-                    sort: { created_at: -1 },
+                    shopid: SHOP_ID_PUBLIC,
+                    target: REPORT_ID,
                     limit: 20
                 }),
             });
@@ -109,27 +104,16 @@ export default function ReportSRR50003() {
 
     const saveLog = async (conditions: string) => {
         try {
-            const now = new Date().toISOString();
             const normalizedEmail = session?.user?.email?.toLowerCase() || 'unknown';
-            await fetch('/rojproject/api/mongodb/update', {
+            await fetch('/rojproject/api/system/activity/log', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    collection: 'report_access_logs',
-                    filter: {
-                        shopid: SHOP_ID_PUBLIC,
-                        email: normalizedEmail,
-                        created_at: now,
-                    },
-                    data: {
-                        shopid: SHOP_ID_PUBLIC,
-                        email: normalizedEmail,
-                        report_name: REPORT_ID,
-                        conditions: conditions,
-                        created_at: now,
-                        updated_at: now,
-                    },
-                    upsert: true,
+                    shopid: SHOP_ID_PUBLIC,
+                    username: normalizedEmail,
+                    activity_type: 'view_report',
+                    target: REPORT_ID,
+                    details: conditions,
                 }),
             });
             fetchLogs(); // Refresh logs
@@ -142,7 +126,7 @@ export default function ReportSRR50003() {
     useEffect(() => {
         if (status === 'loading') return;
         if (!session) {
-            router.push('/login');
+            router.push('/rojproject/login');
             return;
         }
 
@@ -450,10 +434,10 @@ export default function ReportSRR50003() {
                                             {new Date(log.created_at).toLocaleString('th-TH')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                                            {log.email}
+                                            {log.username}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                            {log.conditions}
+                                            {log.details}
                                         </td>
                                     </tr>
                                 ))}

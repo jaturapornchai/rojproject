@@ -21,7 +21,7 @@ export default function UserMenu() {
                 <span className="text-[10px] text-slate-500 leading-none mt-1">{session.user.email}</span>
             </div>
             <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: '/rojproject/login' })}
                 className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1.5 rounded-full hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
             >
                 Sign Out

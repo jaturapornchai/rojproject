@@ -29,19 +29,16 @@ export default function EmailSelector({ selectedEmails, onChange, label = "Selec
 
     const fetchContacts = async () => {
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/email-settings/get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_contacts',
-                    filter: { shopid },
-                    sort: { name: 1 },
-                }),
+                body: JSON.stringify({ shopid }),
             });
 
             const data = await response.json();
             if (response.ok) {
-                setContacts(data.data || []);
+                const emailList = data.email_list ? JSON.parse(data.email_list) : [];
+                setContacts(emailList);
             }
         } catch (err) {
             console.error('Failed to fetch contacts:', err);

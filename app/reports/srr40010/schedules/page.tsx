@@ -77,14 +77,10 @@ export default function ScheduleManagement() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/rojproject/api/mongodb/get', {
+            const response = await fetch('/rojproject/api/system/schedules/get-by-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid: REPORT_ID },
-                    sort: { created_at: -1 },
-                }),
+                body: JSON.stringify({ shopid, report_id: REPORT_ID }),
             });
 
             const data = await response.json();
@@ -93,7 +89,17 @@ export default function ScheduleManagement() {
                 throw new Error(data.error || 'Failed to fetch schedules');
             }
 
-            setSchedules(data.data || []);
+            const rawSchedules = data.data || [];
+            const mappedSchedules = rawSchedules.map((s: any) => ({
+                id: s.id,
+                shopid: s.shop_id,
+                reportid: s.report_id,
+                schedule_id: s.schedule_id,
+                report_name: s.report_name,
+                enabled: s.enabled,
+                ...JSON.parse(s.schedule_pattern)
+            }));
+            setSchedules(mappedSchedules);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -106,56 +112,53 @@ export default function ScheduleManagement() {
         setError(null);
 
         try {
-            const now = new Date().toISOString();
             const schedule_id = editingId || ('schedule-' + Date.now());
 
-            // สร้าง query config จาก date_preset และ filters
             const { startDate, endDate } = calculateDateFromPreset(formData.date_preset);
             const query = buildQuery({ startDate, endDate, filters });
             const pdfConfig = buildPdfConfig('{{guid}}', startDate, endDate);
 
-            const payload = {
-                collection: 'email_schedules',
-                filter: { shopid, reportid: REPORT_ID, schedule_id },
-                data: {
+            const schedulePattern = {
+                ...formData,
+                filter_config: serializeFilters(filters),
+                query_config: {
                     shopid,
-                    reportid: REPORT_ID,
-                    schedule_id,
-                    report_name: REPORT_NAME,
-                    ...formData,
-                    filter_config: serializeFilters(filters), // เก็บ filter config
-                    query_config: {
-                        shopid,
-                        limit: 5000,
-                        query_items: [{
-                            alias: "price_comparison",
-                            query: query,
-                            summary_config: {
-                                levels: [{
-                                    group_by_fields: ["doc_date"],
-                                    sum_fields: ["qty", "sum_amount", "diff"],
-                                    typejson: 1
-                                }],
-                                grand_total: true,
-                                grand_total_type: 99
-                            }
-                        }]
-                    },
-                    pdf_config: pdfConfig,
-                    created_at: editingId ? undefined : now,
-                    updated_at: now,
+                    limit: 5000,
+                    query_items: [{
+                        alias: "price_comparison",
+                        query: query,
+                        summary_config: {
+                            levels: [{
+                                group_by_fields: ["doc_date"],
+                                sum_fields: ["qty", "sum_amount", "diff"],
+                                typejson: 1
+                            }],
+                            grand_total: true,
+                            grand_total_type: 99
+                        }
+                    }]
                 },
-                upsert: true,
+                pdf_config: pdfConfig,
             };
 
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const payload = {
+                shop_id: shopid,
+                report_id: REPORT_ID,
+                schedule_id,
+                report_name: REPORT_NAME,
+                enabled: formData.enabled,
+                schedule_pattern: JSON.stringify(schedulePattern),
+                next_run_at: new Date().toISOString(),
+                interval_minutes: 0
+            };
+
+            const response = await fetch('/rojproject/api/system/schedules/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to save schedule');
             }
@@ -221,14 +224,14 @@ export default function ScheduleManagement() {
             email_subject: schedule.email_subject,
             include_pdf: schedule.include_pdf,
         });
-        
+
         // Load filter config ถ้ามี
         if (schedule.filter_config) {
             setFilters(deserializeFilters(schedule.filter_config));
         } else {
             resetAllFilters();
         }
-        
+
         setEditingId(schedule.schedule_id);
         setShowForm(true);
     };
@@ -239,18 +242,15 @@ export default function ScheduleManagement() {
         }
 
         try {
-            const response = await fetch('/rojproject/api/mongodb/delete', {
+            const response = await fetch('/rojproject/api/system/schedules/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid: REPORT_ID, schedule_id },
-                    delete_many: false,
+                    schedule_id
                 }),
             });
 
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to delete schedule');
             }
@@ -263,22 +263,35 @@ export default function ScheduleManagement() {
 
     const toggleEnabled = async (schedule: EmailSchedule) => {
         try {
-            const response = await fetch('/rojproject/api/mongodb/update', {
+            const schedulePattern = JSON.parse(JSON.stringify(schedule));
+            delete schedulePattern.id;
+            delete schedulePattern.shopid;
+            delete schedulePattern.reportid;
+            delete schedulePattern.schedule_id;
+            delete schedulePattern.report_name;
+            delete schedulePattern.enabled;
+
+            const payload = {
+                shop_id: shopid,
+                report_id: REPORT_ID,
+                schedule_id: schedule.schedule_id,
+                report_name: REPORT_NAME,
+                enabled: !schedule.enabled,
+                schedule_pattern: JSON.stringify({
+                    ...schedulePattern,
+                    enabled: !schedule.enabled
+                }),
+                next_run_at: new Date().toISOString(),
+                interval_minutes: 0
+            };
+
+            const response = await fetch('/rojproject/api/system/schedules/upsert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection: 'email_schedules',
-                    filter: { shopid, reportid: REPORT_ID, schedule_id: schedule.schedule_id },
-                    data: {
-                        enabled: !schedule.enabled,
-                        updated_at: new Date().toISOString(),
-                    },
-                    upsert: false,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to toggle schedule');
             }
@@ -512,11 +525,11 @@ export default function ScheduleManagement() {
                                     </svg>
                                     🔍 ตัวกรองรายงาน (เงื่อนไขเพิ่มเติม)
                                 </button>
-                                
+
                                 {/* Filter Summary */}
-                                <FilterSummary 
-                                    filters={filters} 
-                                    customers={customers} 
+                                <FilterSummary
+                                    filters={filters}
+                                    customers={customers}
                                     branches={branches}
                                     className="mt-2"
                                 />
@@ -556,11 +569,10 @@ export default function ScheduleManagement() {
                                             key={day.value}
                                             type="button"
                                             onClick={() => toggleDayOfWeek(day.value)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                                formData.days_of_week.includes(day.value)
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.days_of_week.includes(day.value)
                                                     ? 'bg-emerald-600 text-white'
                                                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                            }`}
+                                                }`}
                                         >
                                             {day.label}
                                         </button>
@@ -720,11 +732,10 @@ export default function ScheduleManagement() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="font-semibold text-slate-900">{schedule.schedule_name}</h3>
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    schedule.enabled
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${schedule.enabled
                                                         ? 'bg-emerald-100 text-emerald-700'
                                                         : 'bg-slate-100 text-slate-600'
-                                                }`}>
+                                                    }`}>
                                                     {schedule.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                                                 </span>
                                             </div>
@@ -740,8 +751,8 @@ export default function ScheduleManagement() {
                                             {/* แสดง Filter Summary ถ้ามี */}
                                             {schedule.filter_config && (
                                                 <div className="mt-2">
-                                                    <FilterSummary 
-                                                        filters={deserializeFilters(schedule.filter_config)} 
+                                                    <FilterSummary
+                                                        filters={deserializeFilters(schedule.filter_config)}
                                                         customers={customers}
                                                         branches={branches}
                                                     />
