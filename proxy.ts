@@ -2,7 +2,7 @@ import { withAuth } from "next-auth/middleware";
 
 export default withAuth({
     pages: {
-        signIn: "/login",
+        signIn: "/rojproject/login",
     },
 });
 
@@ -18,6 +18,6 @@ export const config = {
          * - favicon.ico (favicon file)
          * - public folder
          */
-        "/((?!api/auth|login|register|_next/static|_next/image|favicon.ico|.*\\.png$).*)",
+        "/((?!api/auth|api/public|login|register|_next/static|_next/image|favicon.ico|.*\\.png$).*)",
     ],
 };
