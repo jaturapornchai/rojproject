@@ -119,13 +119,13 @@ export default function ReportSRR20011() {
 
     const saveLog = async (conditions: string) => {
         try {
-            const normalizedEmail = session?.user?.email?.toLowerCase() || 'unknown';
+            const userName = session?.user?.username || session?.user?.name || 'unknown';
             await fetch('/rojproject/api/system/activity/log', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     shopid: SHOP_ID_PUBLIC,
-                    username: normalizedEmail,
+                    username: userName,
                     activity_type: 'view_report',
                     target: REPORT_ID,
                     details: conditions,
@@ -146,7 +146,7 @@ export default function ReportSRR20011() {
         }
 
         const isAdmin = session?.user?.isAdmin;
-        const allowedReports = (session?.user as any)?.allowed_reports || [];
+        const allowedReports = session?.user?.allowed_reports || [];
         const hasAccess = isAdmin || allowedReports.includes(REPORT_ID);
 
         if (!hasAccess) {

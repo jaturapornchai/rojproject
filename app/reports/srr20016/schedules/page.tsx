@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SHOP_ID_PUBLIC } from '@/lib/constants';
+import EmailSelector from '@/components/EmailSelector';
 
 // Shared modules
 import {
@@ -84,7 +85,7 @@ export default function ScheduleManagement() {
             const response = await fetch('/rojproject/api/system/schedules/get-by-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ shopid, report_id: REPORT_ID }),
+                body: JSON.stringify({ shopid, reportid: REPORT_ID }),
             });
 
             const data = await response.json();
@@ -665,39 +666,18 @@ export default function ScheduleManagement() {
                             </div>
 
                             {/* Recipients */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    ผู้รับ (อีเมล) - แยกด้วยเครื่องหมายจุลภาค
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.recipients.join(', ')}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                    })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                                    placeholder="email1@example.com, email2@example.com"
-                                    required
-                                />
-                            </div>
-
-                            {/* CC Recipients */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    สำเนาถึง (CC) - แยกด้วยเครื่องหมายจุลภาค
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.cc_recipients.join(', ')}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        cc_recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                    })}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                                    placeholder="email1@example.com, email2@example.com"
-                                />
-                            </div>
+                            <EmailSelector
+                                label="ผู้รับ (ถึง)"
+                                selectedEmails={formData.recipients}
+                                onChange={(emails) => setFormData({ ...formData, recipients: emails })}
+                                placeholder="เลือกผู้รับ..."
+                            />
+                            <EmailSelector
+                                label="ผู้รับสำเนา (CC)"
+                                selectedEmails={formData.cc_recipients}
+                                onChange={(emails) => setFormData({ ...formData, cc_recipients: emails })}
+                                placeholder="เลือกผู้รับสำเนา..."
+                            />
 
                             {/* Email Subject */}
                             <div>

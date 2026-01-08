@@ -28,6 +28,7 @@ export default function EmailManagement() {
     const shopid = 'rungroj'; // TODO: Make this dynamic based on user session
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchContacts();
     }, []);
 
@@ -152,7 +153,7 @@ export default function EmailManagement() {
     );
 
     return (
-        <main className="min-h-screen bg-gray-50 font-sans relative">
+        <div className="min-h-screen bg-gray-50 font-sans relative pb-12">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -398,6 +399,6 @@ export default function EmailManagement() {
                     )}
                 </div>
             </div>
-        </main>
+        </div>
     );
 }

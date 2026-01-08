@@ -73,21 +73,21 @@ const handler = NextAuth({
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.username = (user as any).username;
-                token.role = (user as any).role || "user";
-                token.isAdmin = (user as any).isAdmin || false;
-                token.shopId = (user as any).shopId || SHOP_ID_SERVER;
-                token.allowed_reports = (user as any).allowed_reports || [];
+                token.username = user.username;
+                token.role = user.role || "user";
+                token.isAdmin = user.isAdmin || false;
+                token.shopId = user.shopId || SHOP_ID_SERVER;
+                token.allowed_reports = user.allowed_reports || [];
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as any).username = token.username;
+                session.user.username = token.username;
                 session.user.role = (token.role as "admin" | "user") || "user";
                 session.user.isAdmin = (token.isAdmin as boolean) || false;
                 session.user.shopId = (token.shopId as string) || SHOP_ID_SERVER;
-                (session.user as any).allowed_reports = (token.allowed_reports as string[]) || [];
+                session.user.allowed_reports = (token.allowed_reports as string[]) || [];
             }
             return session;
         },
